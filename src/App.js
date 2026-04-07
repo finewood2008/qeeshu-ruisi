@@ -4,7 +4,7 @@ import {
   LayoutDashboard, 
   FolderOpen, 
   Users, 
-  Settings, 
+  Settings as SettingsIcon, 
   Bell, 
   FileText,
   BrainCircuit,
@@ -50,8 +50,8 @@ export default function STMBoxWorkbench() {
             <BrainCircuit size={22} />
           </div>
           <div>
-            <h1 className="text-white font-bold text-lg tracking-wide">QeeClaw</h1>
-            <p className="text-xs text-blue-400 font-medium">睿思·咨询助理</p>
+            <h1 className="text-white font-bold text-lg tracking-wide">企数睿思</h1>
+            <p className="text-xs text-blue-400 font-medium">QEESHU RUISI</p>
           </div>
         </div>
 
@@ -64,7 +64,7 @@ export default function STMBoxWorkbench() {
         </nav>
 
         <div className="p-4 border-t border-gray-800 bg-gray-900/50">
-          <NavItem icon={<Settings size={18} />} label="方法论设置" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+          <NavItem icon={<SettingsIcon size={18} />} label="方法论设置" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
           <div className="mt-4 flex items-center gap-3 px-3 py-2 bg-gray-800/50 rounded-lg">
             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-inner">
               李

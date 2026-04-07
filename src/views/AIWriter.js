@@ -93,7 +93,7 @@ export default function AIWriter() {
   // --- Render Block Helper ---
   const renderBlock = (block) => {
     const aiIndicator = block.aiGenerated && (
-      <span className="absolute -left-6 top-1 text-purple-500 animate-pulse" title="BrainBox AI 生成">
+      <span className="absolute -left-6 top-1 text-purple-500 animate-pulse" title="企数睿思 AI 生成">
         <Sparkles size={16} />
       </span>
     );
@@ -125,7 +125,7 @@ export default function AIWriter() {
         return (
           <div className="group relative my-8 border border-blue-100 bg-blue-50/30 rounded-xl p-6 shadow-sm">
             <div className="absolute -top-3 left-6 bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border border-blue-200">
-              <Sparkles size={10} /> BrainBox 自动图表
+              <Sparkles size={10} /> 企数睿思 自动图表
             </div>
             <div className="flex justify-between items-center mb-6 mt-2">
               <div>
@@ -332,7 +332,7 @@ export default function AIWriter() {
           <div className="p-4 border-b border-blue-100 bg-gradient-to-b from-blue-50/80 to-white flex items-center justify-between">
             <div className="flex items-center gap-2 font-bold text-blue-900">
               <Sparkles size={18} className="text-blue-600" />
-              睿思·情境辅助推荐
+              企数睿思·情境辅助推荐
             </div>
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>

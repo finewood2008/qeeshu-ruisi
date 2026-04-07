@@ -285,7 +285,7 @@ function ClientDetail({ client, onBack }) {
             <div className={`p-6 rounded-xl border shadow-sm ${isWarning ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
               <div className={`flex items-center gap-2 font-bold mb-3 ${isWarning ? 'text-red-800' : 'text-blue-800'}`}>
                 <BrainCircuit size={20} />
-                BrainBox 深度诊断与策略建议
+                企数睿思 深度诊断与策略建议
               </div>
               <p className={`text-sm leading-relaxed ${isWarning ? 'text-red-900' : 'text-blue-900'}`}>
                 {client.aiDiagnosis}

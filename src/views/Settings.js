@@ -29,7 +29,7 @@ export default function Settings() {
             <SlidersHorizontal className="text-blue-600" />
             系统与方法论设置
           </h2>
-          <p className="text-sm text-gray-500 mt-1">配置 睿思 (Ruisi) 咨询超级助理的底层思考逻辑与参考框架</p>
+          <p className="text-sm text-gray-500 mt-1">配置 企数睿思 (QEESHU RUISI) 的底层思考逻辑与参考框架</p>
         </div>
         <button className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition shadow-sm">
           保存全部更改

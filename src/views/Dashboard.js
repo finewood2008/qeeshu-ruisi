@@ -26,7 +26,7 @@ export default function Dashboard() {
             系统状态：运行良好
           </div>
           <h2 className="text-3xl font-black text-gray-900 tracking-tight">下午好，李顾问</h2>
-          <p className="text-gray-600 mt-2 text-[15px]">Qee-Box 边缘算力终端运行正常，睿思大脑今日已基于您的项目进展完成了 12 项智能推演。</p>
+          <p className="text-gray-600 mt-2 text-[15px]">边缘算力终端运行正常，企数睿思大脑今日已基于您的项目进展完成了 12 项智能推演。</p>
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500 mb-1">当前项目进度综合健康度</p>
@@ -136,7 +136,7 @@ export default function Dashboard() {
             <div className="p-6 relative z-10">
               <div className="flex items-center gap-2 text-blue-100 mb-5">
                 <BrainCircuit size={20} className="text-yellow-300" />
-                <h3 className="font-bold text-lg tracking-wide text-white">睿思·智能洞察推荐</h3>
+                <h3 className="font-bold text-lg tracking-wide text-white">企数睿思·智能洞察推荐</h3>
               </div>
               <p className="text-[13px] text-blue-100 mb-5 leading-relaxed">
                 基于您最近在密集查阅<span className="bg-white/20 px-1.5 py-0.5 rounded text-white mx-1 font-medium">成本控制</span>相关材料，系统主动为您推送以下高价值内部核心资产：
@@ -264,7 +264,7 @@ function ProjectItem({ name, client, status, progress, dueDate, aiTip, alertType
         ) : (
           <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-500" />
         )}
-        <p className="leading-relaxed"><strong className={alertType === 'warning' ? 'text-amber-700' : 'text-emerald-700'}>BrainBox 提示：</strong>{aiTip}</p>
+        <p className="leading-relaxed"><strong className={alertType === 'warning' ? 'text-amber-700' : 'text-emerald-700'}>企数睿思 提示：</strong>{aiTip}</p>
       </div>
     </div>
   );
