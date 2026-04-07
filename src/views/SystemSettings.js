@@ -215,3 +215,21 @@ function SettingRow({ title, children }) {
     </div>
   );
 }
+
+function ToggleRow({ title, desc, active }) {
+  const [isOn, setIsOn] = useState(active);
+  return (
+    <div className="flex items-start justify-between py-3 border-b border-gray-100 last:border-0">
+      <div className="pr-12">
+        <h4 className="text-sm font-bold text-gray-800">{title}</h4>
+        <p className="text-xs text-gray-500 mt-1">{desc}</p>
+      </div>
+      <button 
+        onClick={() => setIsOn(!isOn)}
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isOn ? 'bg-blue-600' : 'bg-gray-200'}`}
+      >
+        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isOn ? 'translate-x-5' : 'translate-x-0'}`}></span>
+      </button>
+    </div>
+  );
+}
