@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  ChevronRight, BrainCircuit, ArrowRight, MessageSquare, 
-  FileText, Activity, AlertTriangle, TrendingUp, TrendingDown,
-  Clock, Play, MoreHorizontal, ArrowUpRight, BarChart3
+  ChevronRight, BrainCircuit, ArrowUpRight, MessageSquare, 
+  FileText, Activity, AlertTriangle, Clock, Search as SearchIcon, CheckCircle2, MoreHorizontal
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -42,7 +41,7 @@ export default function Dashboard() {
           trend="+12%" 
           trendText="较上周"
           type="info" 
-          icon={<SearchIcon />}
+          icon={<SearchIcon size={20} className="text-blue-500" />}
           sparkline={true}
         />
         <StatusCard 
@@ -195,12 +194,6 @@ export default function Dashboard() {
 }
 
 // --- Sub Components ---
-
-// Fake icon component to avoid passing huge SVGs
-function SearchIcon() {
-  return <Search size={20} className="text-blue-500" />;
-}
-import { Search } from 'lucide-react';
 
 function StatusCard({ title, value, trend, trendText, type, icon, sparkline }) {
   const styles = {
