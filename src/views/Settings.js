@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   BookOpen, SlidersHorizontal, Library, CheckCircle2, 
   ToggleRight, ToggleLeft, UploadCloud, ShieldCheck,
-  Globe, Building, AlertCircle, X, Info
+  Globe, Building, AlertCircle, X, Info, Image as ImageIcon
 } from 'lucide-react';
 
 // --- Mock Data for Framework Details ---
@@ -349,8 +349,7 @@ function ProprietaryItem({ title, date }) {
   );
 }
 
-// Missing icon fix
-import { Image as ImageIcon } from 'lucide-react';
+// Missing icon fix removed
 
 function BrainIcon({ className }) {
   return (
