@@ -16,7 +16,8 @@ import Search from './views/Search';
 import AIWriter from './views/AIWriter';
 import CRM from './views/CRM';
 import Assets from './views/Assets';
-import Settings from './views/Settings';
+import SettingsMethodology from './views/Settings';
+import SystemSettings from './views/SystemSettings';
 
 export default function STMBoxWorkbench() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,7 +30,8 @@ export default function STMBoxWorkbench() {
       case 'write': return <AIWriter />;
       case 'crm': return <CRM />;
       case 'assets': return <Assets />;
-      case 'settings': return <Settings />;
+      case 'settings-methodology': return <SettingsMethodology />;
+      case 'settings-system': return <SystemSettings />;
       default: return (
         <div className="flex items-center justify-center h-full text-gray-500">
           <div className="text-center">
@@ -64,15 +66,20 @@ export default function STMBoxWorkbench() {
         </nav>
 
         <div className="p-4 border-t border-gray-800 bg-gray-900/50">
-          <NavItem icon={<SettingsIcon size={18} />} label="方法论设置" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
-          <div className="mt-4 flex items-center gap-3 px-3 py-2 bg-gray-800/50 rounded-lg">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-inner">
-              李
+          <NavItem icon={<BrainCircuit size={18} />} label="方法论" active={activeTab === 'settings-methodology'} onClick={() => setActiveTab('settings-methodology')} />
+          <NavItem icon={<SettingsIcon size={18} />} label="系统设置" active={activeTab === 'settings-system'} onClick={() => setActiveTab('settings-system')} />
+          
+          <div className="mt-4 flex items-center justify-between px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 transition cursor-pointer rounded-lg group">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-inner">
+                李
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white group-hover:text-blue-400 transition">李顾问</p>
+                <p className="text-xs text-gray-400">高级咨询师</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-white">李顾问</p>
-              <p className="text-xs text-gray-400">高级咨询师</p>
-            </div>
+            <SettingsIcon size={14} className="text-gray-500 group-hover:text-gray-300 opacity-0 group-hover:opacity-100 transition" />
           </div>
         </div>
       </aside>
