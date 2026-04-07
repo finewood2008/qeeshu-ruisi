@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/STMAI/static/css/main.0bcda85f.css",
-    "main.js": "/STMAI/static/js/main.7b3c0b4a.js",
-    "static/js/453.1d35a74c.chunk.js": "/STMAI/static/js/453.1d35a74c.chunk.js",
-    "index.html": "/STMAI/index.html",
-    "main.0bcda85f.css.map": "/STMAI/static/css/main.0bcda85f.css.map",
-    "main.7b3c0b4a.js.map": "/STMAI/static/js/main.7b3c0b4a.js.map",
-    "453.1d35a74c.chunk.js.map": "/STMAI/static/js/453.1d35a74c.chunk.js.map"
+    "main.css": "/qeeshu-ruisi/static/css/main.0bcda85f.css",
+    "main.js": "/qeeshu-ruisi/static/js/main.0adf8cb3.js",
+    "static/js/453.1d35a74c.chunk.js": "/qeeshu-ruisi/static/js/453.1d35a74c.chunk.js",
+    "index.html": "/qeeshu-ruisi/index.html",
+    "main.0bcda85f.css.map": "/qeeshu-ruisi/static/css/main.0bcda85f.css.map",
+    "main.0adf8cb3.js.map": "/qeeshu-ruisi/static/js/main.0adf8cb3.js.map",
+    "453.1d35a74c.chunk.js.map": "/qeeshu-ruisi/static/js/453.1d35a74c.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.0bcda85f.css",
-    "static/js/main.7b3c0b4a.js"
+    "static/js/main.0adf8cb3.js"
   ]
 }
