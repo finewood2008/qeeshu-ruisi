@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   ChevronRight, BrainCircuit, ArrowUpRight, MessageSquare, 
-  FileText, Activity, AlertTriangle, Clock, Search as SearchIcon, CheckCircle2, MoreHorizontal
+  FileText, Activity, AlertTriangle, Clock, Search as SearchIcon, CheckCircle2, MoreHorizontal,
+  BarChart3, Play
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
