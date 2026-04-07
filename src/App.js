@@ -67,9 +67,11 @@ export default function STMBoxWorkbench() {
 
         <div className="p-4 border-t border-gray-800 bg-gray-900/50">
           <NavItem icon={<BrainCircuit size={18} />} label="方法论" active={activeTab === 'settings-methodology'} onClick={() => setActiveTab('settings-methodology')} />
-          <NavItem icon={<SettingsIcon size={18} />} label="系统设置" active={activeTab === 'settings-system'} onClick={() => setActiveTab('settings-system')} />
           
-          <div className="mt-4 flex items-center justify-between px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 transition cursor-pointer rounded-lg group">
+          <div 
+            className="mt-4 flex items-center justify-between px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 transition cursor-pointer rounded-lg group"
+            onClick={() => setActiveTab('settings-system')}
+          >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-inner">
                 李
