@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/STMAI/static/css/main.2d27f83e.css",
-    "main.js": "/STMAI/static/js/main.9d14667b.js",
-    "static/js/453.cecff60f.chunk.js": "/STMAI/static/js/453.cecff60f.chunk.js",
+    "main.css": "/STMAI/static/css/main.85354afb.css",
+    "main.js": "/STMAI/static/js/main.d69a5d32.js",
+    "static/js/453.1d35a74c.chunk.js": "/STMAI/static/js/453.1d35a74c.chunk.js",
     "index.html": "/STMAI/index.html",
-    "main.2d27f83e.css.map": "/STMAI/static/css/main.2d27f83e.css.map",
-    "main.9d14667b.js.map": "/STMAI/static/js/main.9d14667b.js.map",
-    "453.cecff60f.chunk.js.map": "/STMAI/static/js/453.cecff60f.chunk.js.map"
+    "main.85354afb.css.map": "/STMAI/static/css/main.85354afb.css.map",
+    "main.d69a5d32.js.map": "/STMAI/static/js/main.d69a5d32.js.map",
+    "453.1d35a74c.chunk.js.map": "/STMAI/static/js/453.1d35a74c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.2d27f83e.css",
-    "static/js/main.9d14667b.js"
+    "static/css/main.85354afb.css",
+    "static/js/main.d69a5d32.js"
   ]
 }
