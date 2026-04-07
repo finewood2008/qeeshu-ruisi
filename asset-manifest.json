@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/STMAI/static/css/main.85354afb.css",
-    "main.js": "/STMAI/static/js/main.d69a5d32.js",
+    "main.css": "/STMAI/static/css/main.0bcda85f.css",
+    "main.js": "/STMAI/static/js/main.7b3c0b4a.js",
     "static/js/453.1d35a74c.chunk.js": "/STMAI/static/js/453.1d35a74c.chunk.js",
     "index.html": "/STMAI/index.html",
-    "main.85354afb.css.map": "/STMAI/static/css/main.85354afb.css.map",
-    "main.d69a5d32.js.map": "/STMAI/static/js/main.d69a5d32.js.map",
+    "main.0bcda85f.css.map": "/STMAI/static/css/main.0bcda85f.css.map",
+    "main.7b3c0b4a.js.map": "/STMAI/static/js/main.7b3c0b4a.js.map",
     "453.1d35a74c.chunk.js.map": "/STMAI/static/js/453.1d35a74c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.85354afb.css",
-    "static/js/main.d69a5d32.js"
+    "static/css/main.0bcda85f.css",
+    "static/js/main.7b3c0b4a.js"
   ]
 }
