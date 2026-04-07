@@ -215,33 +215,21 @@ function SettingRow({ title, children }) {
     </div>
   );
 }
- f u n c t i o n   T o g g l e R o w ( {   t i t l e ,   d e s c ,   a c t i v e   } )   { 
-     c o n s t   [ i s O n ,   s e t I s O n ]   =   u s e S t a t e ( a c t i v e ) ; 
-     r e t u r n   ( 
-         < d i v   c l a s s N a m e = \  
- f l e x  
- i t e m s - s t a r t  
- j u s t i f y - b e t w e e n  
- p y - 3  
- b o r d e r - b  
- b o r d e r - g r a y - 1 0 0  
- l a s t : b o r d e r - 0 \ > 
-             < d i v   c l a s s N a m e = \ p r - 1 2 \ > 
-                 < h 4   c l a s s N a m e = \ t e x t - s m  
- f o n t - b o l d  
- t e x t - g r a y - 8 0 0 \ > { t i t l e } < / h 4 > 
-                 < p   c l a s s N a m e = \ t e x t - x s  
- t e x t - g r a y - 5 0 0  
- m t - 1 \ > { d e s c } < / p > 
-             < / d i v > 
-             < b u t t o n   
-                 o n C l i c k = { ( )   = >   s e t I s O n ( ! i s O n ) } 
-                 c l a s s N a m e = { \  e l a t i v e   i n l i n e - f l e x   h - 6   w - 1 1   f l e x - s h r i n k - 0   c u r s o r - p o i n t e r   r o u n d e d - f u l l   b o r d e r - 2   b o r d e r - t r a n s p a r e n t   t r a n s i t i o n - c o l o r s   d u r a t i o n - 2 0 0   e a s e - i n - o u t   f o c u s : o u t l i n e - n o n e   \ \ } 
-             > 
-                 < s p a n   c l a s s N a m e = { \ p o i n t e r - e v e n t s - n o n e   i n l i n e - b l o c k   h - 5   w - 5   t r a n s f o r m   r o u n d e d - f u l l   b g - w h i t e   s h a d o w   r i n g - 0   t r a n s i t i o n   d u r a t i o n - 2 0 0   e a s e - i n - o u t   \ \ } > < / s p a n > 
-             < / b u t t o n > 
-         < / d i v > 
-     ) ; 
- } 
-  
- 
+
+function ToggleRow({ title, desc, active }) {
+  const [isOn, setIsOn] = useState(active);
+  return (
+    <div className="flex items-start justify-between py-3 border-b border-gray-100 last:border-0">
+      <div className="pr-12">
+        <h4 className="text-sm font-bold text-gray-800">{title}</h4>
+        <p className="text-xs text-gray-500 mt-1">{desc}</p>
+      </div>
+      <button 
+        onClick={() => setIsOn(!isOn)}
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isOn ? 'bg-blue-600' : 'bg-gray-200'}`}
+      >
+        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isOn ? 'translate-x-5' : 'translate-x-0'}`}></span>
+      </button>
+    </div>
+  );
+}
