@@ -332,7 +332,7 @@ export default function AIWriter() {
           <div className="p-4 border-b border-blue-100 bg-gradient-to-b from-blue-50/80 to-white flex items-center justify-between">
             <div className="flex items-center gap-2 font-bold text-blue-900">
               <Sparkles size={18} className="text-blue-600" />
-              BrainBox 情境辅助推荐
+              睿思·情境辅助推荐
             </div>
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>

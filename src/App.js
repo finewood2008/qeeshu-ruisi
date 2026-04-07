@@ -16,6 +16,7 @@ import Search from './views/Search';
 import AIWriter from './views/AIWriter';
 import CRM from './views/CRM';
 import Assets from './views/Assets';
+import Settings from './views/Settings';
 
 export default function STMBoxWorkbench() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,6 +29,7 @@ export default function STMBoxWorkbench() {
       case 'write': return <AIWriter />;
       case 'crm': return <CRM />;
       case 'assets': return <Assets />;
+      case 'settings': return <Settings />;
       default: return (
         <div className="flex items-center justify-center h-full text-gray-500">
           <div className="text-center">
@@ -49,7 +51,7 @@ export default function STMBoxWorkbench() {
           </div>
           <div>
             <h1 className="text-white font-bold text-lg tracking-wide">QeeClaw</h1>
-            <p className="text-xs text-blue-400 font-medium">BrainBox OS</p>
+            <p className="text-xs text-blue-400 font-medium">睿思·咨询助理</p>
           </div>
         </div>
 
@@ -62,7 +64,7 @@ export default function STMBoxWorkbench() {
         </nav>
 
         <div className="p-4 border-t border-gray-800 bg-gray-900/50">
-          <NavItem icon={<Settings size={18} />} label="系统设置" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+          <NavItem icon={<Settings size={18} />} label="方法论设置" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
           <div className="mt-4 flex items-center gap-3 px-3 py-2 bg-gray-800/50 rounded-lg">
             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-inner">
               李

@@ -198,7 +198,7 @@ export default function Search() {
             <div className="p-4 border-b border-gray-200 bg-blue-50/50 flex justify-between items-center">
               <div className="flex items-center gap-2 text-blue-800">
                 <BrainCircuit size={20} />
-                <h3 className="font-semibold text-lg">BrainBox 智能洞察</h3>
+                <h3 className="font-semibold text-lg">睿思·方法论洞察</h3>
               </div>
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium border border-blue-200">
                 基于选中案例生成
@@ -239,7 +239,7 @@ export default function Search() {
               {/* Chat Section */}
               <div className="border-t border-gray-100 pt-6 flex flex-col flex-1 animate-fade-in-up" style={{animationDelay: '200ms'}}>
                 <h4 className="text-[13px] font-bold text-gray-900 mb-3 flex items-center gap-2 uppercase tracking-wider">
-                  <MessageSquare size={16} className="text-purple-500" /> 追问 BrainBox
+                  <MessageSquare size={16} className="text-purple-500" /> 追问睿思助理
                 </h4>
                 
                 {/* Chat History */}

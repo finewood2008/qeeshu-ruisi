@@ -72,7 +72,7 @@ export default function Assets() {
       {/* Header */}
       <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">本地资产与硬件管理 (STM-Box)</h2>
+          <h2 className="text-xl font-bold text-gray-900">本地资产与硬件管理 (Qee-Box)</h2>
           <p className="text-sm text-gray-500 mt-1">管理物理机密文档的向量化队列与边缘算力终端状态</p>
         </div>
         <div className="flex gap-3">
@@ -106,7 +106,7 @@ export default function Assets() {
                   <HardDrive className="text-blue-400" size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold">STM-Box Edge AI 终端 (Node-01)</h3>
+                  <h3 className="text-lg font-bold">Qee-Box Edge AI 终端 (Node-01)</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="flex h-2 w-2 relative">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
