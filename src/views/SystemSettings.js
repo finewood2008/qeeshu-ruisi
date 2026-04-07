@@ -123,11 +123,60 @@ export default function SystemSettings() {
             </div>
           )}
 
-          {activeTab !== 'profile' && activeTab !== 'general' && (
-            <div className="flex flex-col items-center justify-center h-[400px] text-gray-400">
-               <SettingsIcon size={48} className="mb-4 text-gray-200" />
-               <h3 className="text-lg font-medium text-gray-600 mb-2">此设置项正在开发中</h3>
-               <p className="text-sm">当前仅支持演示“个人资料”与“系统交互偏好”功能。</p>
+          {activeTab === 'notifications' && (
+            <div className="space-y-8 animate-fade-in">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">通知与订阅</h3>
+                <p className="text-sm text-gray-500 mb-6">管理企数睿思对您发送的各类提醒和摘要报告。</p>
+              </div>
+
+              <div className="space-y-5">
+                <ToggleRow title="每日智能简报 (Email)" desc="每天早上 8:00 发送昨日系统处理的资产摘要及今日重要预警客户。" active={true} />
+                <ToggleRow title="资产处理完成通知 (App)" desc="当您上传的超大文档或录音被系统 NPU 向量化处理完毕时提醒。" active={true} />
+                <ToggleRow title="高优先级客户健康度预警" desc="当您负责的 CRM 客户综合健康度骤降或触发红线时，立即发送企微消息。" active={true} />
+                <ToggleRow title="内部理论框架更新通知" desc="当机构超管上传或更新了新的“自有理论框架”时进行通知。" active={false} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div className="space-y-8 animate-fade-in">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">安全与密码</h3>
+                <p className="text-sm text-gray-500 mb-6">保护您的企数睿思账户安全。</p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900">登录密码</h4>
+                      <p className="text-xs text-gray-500 mt-1">上次修改：30 天前</p>
+                    </div>
+                    <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-100 transition">修改密码</button>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900">双重验证 (2FA)</h4>
+                      <p className="text-xs text-gray-500 mt-1">为您的账户增加一层额外的安全保护。当前状态：未开启</p>
+                    </div>
+                    <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition">立即开启</button>
+                  </div>
+                </div>
+
+                <div className="bg-red-50 p-5 rounded-xl border border-red-200">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="text-sm font-bold text-red-900">注销账户</h4>
+                      <p className="text-xs text-red-700 mt-1">永久删除您的个人配置和历史交互记录，此操作不可逆。</p>
+                    </div>
+                    <button className="px-4 py-2 bg-white border border-red-300 text-red-700 text-sm font-medium rounded hover:bg-red-100 transition">申请注销</button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
