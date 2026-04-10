@@ -1,80 +1,306 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { 
   BookOpen, SlidersHorizontal, Library, CheckCircle2, 
   ToggleRight, ToggleLeft, UploadCloud, ShieldCheck,
-  Globe, Building, AlertCircle, X, Info, Image as ImageIcon
+  Globe, Building, AlertCircle, X, Info, Image as ImageIcon, Save, Plus, ArrowUp, ArrowDown, FileText
 } from 'lucide-react';
+import DataSourceBadge from '../components/DataSourceBadge';
+import { useAppShell } from '../AppShellContext';
+import { useSdkViewData } from '../hooks/useSdkViewData';
+import {
+  createCustomFramework,
+  loadMethodologySnapshot,
+  persistMethodologyProfile,
+} from '../sdk/api';
 
-// --- Mock Data for Framework Details ---
-const frameworkDetails = {
+const builtInFrameworkCatalog = {
   mckinsey: {
-    title: "麦肯锡 7S 模型 (McKinsey 7S Framework)",
-    desc: "用于分析企业内部组织的结构和效能，强调各项要素之间的协同性。",
-    dimensions: ["Strategy (战略)", "Structure (结构)", "Systems (制度)", "Shared Values (共同价值观)", "Style (风格)", "Staff (员工)", "Skills (技能)"],
-    application: "当“企数睿思”激活此模型时，在诊断企业数字化转型受阻时，会自动扫描报告中是否仅关注了‘系统(Systems)’，而忽视了‘员工技能(Skills)’或‘企业文化(Shared Values)’的匹配度。",
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/McKinsey_7S_Framework.svg/512px-McKinsey_7S_Framework.svg.png"
+    title: '麦肯锡 7S 模型',
+    desc: '用于组织诊断与战略落地一致性分析。',
   },
   bcg: {
-    title: "波士顿矩阵 (BCG Matrix)",
-    desc: "用于大型企业进行业务组合分析，基于市场增长率和相对市场份额评估各项业务。",
-    dimensions: ["Stars (明星业务)", "Cash Cows (现金牛业务)", "Question Marks (问题业务)", "Dogs (瘦狗业务)"],
-    application: "激活此模型后，AI 在处理多业务线客户时，会自动根据其各业务的营收增速和市场占有率数据，生成气泡图，并建议资源分配策略（如：用现金牛业务的利润去投资明星业务）。",
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/BCG_Matrix.svg/512px-BCG_Matrix.svg.png"
+    title: '波士顿矩阵 (BCG Matrix)',
+    desc: '用于业务组合与市场份额/增长率分析。',
   },
   porter: {
-    title: "波特五力模型 (Porter's Five Forces)",
-    desc: "用于分析行业竞争态势和市场吸引力的经典战略框架。",
-    dimensions: ["现有竞争者的竞争能力", "潜在进入者的威胁", "替代品的威胁", "供应商的讨价还价能力", "购买者的讨价还价能力"],
-    application: "当遇到“新市场进入可行性分析”类需求时，企数睿思会自动按照这五个维度，去全网或内网知识库中爬取相关情报，生成全面的竞争格局风险提示。",
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Porter%27s_Five_Forces_Model.svg/512px-Porter%27s_Five_Forces_Model.svg.png"
-  }
+    title: '波特五力模型',
+    desc: '用于行业竞争格局与吸引力评估。',
+  },
+  scor: {
+    title: 'SCOR 供应链参考模型',
+    desc: '用于供应链流程、绩效和优化诊断。',
+  },
+  pestel: {
+    title: 'PESTEL 宏观环境分析',
+    desc: '用于政、经、社、技、环、法多维度外部扫描。',
+  },
+  swot: {
+    title: 'SWOT 分析模型',
+    desc: '用于优势、劣势、机会、威胁的基础诊断。',
+  },
 };
 
+const emptyMethodologySnapshot = {
+  routeProfile: {
+    resolvedModel: '',
+    configuredProviderCount: 0,
+  },
+  providerSummary: [],
+  runtimeState: {
+    runtimeLabel: 'OpenClaw',
+    runtimeStatus: 'unknown',
+  },
+  runtime: {
+    workspaceLabel: '待接入',
+    runtimeLabel: 'OpenClaw',
+  },
+  knowledge: {
+    assetCount: 0,
+    indexedCount: 0,
+    watchDir: '待配置',
+    lastSyncAt: '',
+  },
+  missingApis: [
+    'framework registry / methodology plugin catalog',
+    '私有方法论文档上传与结构提炼',
+    '组织级策略持久化与团队共享',
+    '方法论开关与 AI Writer 联动校验',
+  ],
+};
+
+function inferFrameworkDescription(fileName) {
+  const normalized = String(fileName || '').replace(/\.[^.]+$/, '');
+  if (!normalized) {
+    return '';
+  }
+  return `从本地方法论文档《${normalized}》导入，建议后续继续补充适用业务场景、关键诊断维度和优先级说明。`;
+}
+
 export default function Settings() {
+  const { pushNotificationEvent, pushToast } = useAppShell();
+  const frameworkFileInputRef = useRef(null);
+  const loader = useCallback(() => loadMethodologySnapshot(), []);
+  const { data: methodologyData, error: methodologyError, source: methodologySource } = useSdkViewData(loader);
+  const methodologySnapshot = methodologyData || emptyMethodologySnapshot;
+  const isLocalMode = methodologySource === 'local';
+  const providerSummary = Array.isArray(methodologySnapshot.providerSummary) ? methodologySnapshot.providerSummary : [];
+  const missingApis = Array.isArray(methodologySnapshot.missingApis) ? methodologySnapshot.missingApis : [];
   const [strategy, setStrategy] = useState('mixed');
   const [frameworks, setFrameworks] = useState({
-    mckinsey: true,
-    bcg: true,
-    porter: true,
+    mckinsey: false,
+    bcg: false,
+    porter: false,
     scor: false,
-    pestel: true,
-    swot: true,
+    pestel: false,
+    swot: false,
   });
 
   // Modal State
   const [selectedFramework, setSelectedFramework] = useState(null);
+  const [saveState, setSaveState] = useState({ status: 'idle', message: '' });
+  const [createFrameworkOpen, setCreateFrameworkOpen] = useState(false);
+  const [customFrameworks, setCustomFrameworks] = useState([]);
+  const [importedFrameworkFile, setImportedFrameworkFile] = useState(null);
+  const [customFrameworkForm, setCustomFrameworkForm] = useState({
+    title: '',
+    desc: '',
+  });
+
+  const proprietaryFrameworks = useMemo(() => customFrameworks, [customFrameworks]);
+
+  useEffect(() => {
+    if (methodologySnapshot.strategy) {
+      setStrategy(methodologySnapshot.strategy);
+    }
+    if (methodologySnapshot.frameworks) {
+      setFrameworks((current) => ({
+        ...current,
+        ...methodologySnapshot.frameworks,
+      }));
+    }
+    if (Array.isArray(methodologySnapshot.customFrameworks) && methodologySnapshot.customFrameworks.length > 0) {
+      setCustomFrameworks(methodologySnapshot.customFrameworks);
+    } else {
+      setCustomFrameworks([]);
+    }
+  }, [methodologySnapshot]);
 
   const toggleFramework = (e, key) => {
     e.stopPropagation(); // 阻止冒泡，避免触发打开 Modal
-    setFrameworks(prev => ({ ...prev, [key]: !prev[key] }));
+    const nextEnabled = !frameworks[key];
+    setFrameworks(prev => ({ ...prev, [key]: nextEnabled }));
+    setSaveState({ status: 'idle', message: '' });
+    pushNotificationEvent(
+      `预置框架已${nextEnabled ? '启用' : '停用'}`,
+      `框架键：${key}。点击“保存全部更改”后会写入当前方法论配置。`,
+      'info',
+    );
   };
 
   const openFrameworkModal = (key) => {
-    // 只有我们预先写了 mock 数据的才可以点开，为了演示效果
-    if(frameworkDetails[key]) {
-      setSelectedFramework(frameworkDetails[key]);
-    } else {
-      setSelectedFramework({
-        title: key.toUpperCase() + " 模型",
-        desc: "该模型详细说明正在由企数睿思知识工程团队完善中...",
-        dimensions: ["维度 1", "维度 2", "维度 3"],
-        application: "激活后，企数睿思将在相关诊断场景中优先调用此模型的分析逻辑。"
+    const framework = builtInFrameworkCatalog[key];
+    setSelectedFramework({
+      title: framework?.title || `${key.toUpperCase()} 模型`,
+      desc: framework?.desc || '当前仅支持框架开关与优先级配置，详细框架知识卡和图谱尚未接入。',
+      dimensions: [],
+      application: '当前版本里，这个框架主要用于控制 AI 思考策略的优先级；真正的框架注册中心与知识图谱后续再接入。',
+    });
+  };
+
+  const handleSaveMethodology = async () => {
+    if (!isLocalMode) {
+      setSaveState({
+        status: 'idle',
+        message: '当前只有本地桌面模式支持方法论配置持久化。',
       });
+      return;
+    }
+
+    try {
+      setSaveState({ status: 'saving', message: '正在保存方法论配置...' });
+      await persistMethodologyProfile({
+        strategy,
+        frameworks,
+        customFrameworks: proprietaryFrameworks,
+      });
+      setSaveState({ status: 'saved', message: '方法论配置已写入本地桌面数据库。' });
+      pushNotificationEvent(
+        '方法论配置已保存',
+        `当前策略：${strategy}；预置框架与机构自有框架优先级已写入本地桌面数据库。`,
+        'success',
+      );
+      pushToast('方法论配置已保存', 'success', { recordEvent: false });
+    } catch (saveError) {
+      setSaveState({ status: 'error', message: saveError.message || '保存方法论配置失败。' });
     }
   };
+
+  const handleCreateFramework = async () => {
+    if (!customFrameworkForm.title.trim()) {
+      return;
+    }
+
+    try {
+      setSaveState({ status: 'saving', message: '正在新增机构自有框架...' });
+      const profile = await createCustomFramework({
+        title: customFrameworkForm.title.trim(),
+        desc: customFrameworkForm.desc.trim(),
+        sourcePath: importedFrameworkFile?.path || null,
+        sourceName: importedFrameworkFile?.name || null,
+      });
+      if (Array.isArray(profile?.customFrameworks)) {
+        setCustomFrameworks(profile.customFrameworks);
+      }
+      setCreateFrameworkOpen(false);
+      setCustomFrameworkForm({ title: '', desc: '' });
+      setImportedFrameworkFile(null);
+      setSaveState({ status: 'saved', message: '新的机构自有框架已保存到本地数据库。' });
+      pushNotificationEvent(
+        `机构自有框架「${customFrameworkForm.title.trim()}」已新增`,
+        '新的方法论条目已经写入本地数据库，可继续调整优先级或启停状态。',
+        'success',
+      );
+      pushToast(`机构自有框架「${customFrameworkForm.title.trim()}」已新增`, 'success', { recordEvent: false });
+    } catch (saveError) {
+      setSaveState({ status: 'error', message: saveError.message || '新增机构自有框架失败。' });
+    }
+  };
+
+  const openFrameworkFilePicker = useCallback(() => {
+    frameworkFileInputRef.current?.click();
+  }, []);
+
+  const handleFrameworkFileSelected = useCallback((event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    const sourcePath = file.path || '';
+    setImportedFrameworkFile({
+      name: file.name,
+      path: sourcePath,
+      size: file.size,
+    });
+    setCustomFrameworkForm({
+      title: file.name.replace(/\.[^.]+$/, ''),
+      desc: inferFrameworkDescription(file.name),
+    });
+    setCreateFrameworkOpen(true);
+    setSaveState({ status: 'idle', message: '' });
+    pushNotificationEvent(
+      `已选择方法论文档「${file.name}」`,
+      '文档元数据已加载到新增框架表单，下一步可补充说明并保存到本地数据库。',
+      'info',
+    );
+    event.target.value = '';
+  }, [pushNotificationEvent]);
+
+  const toggleProprietaryFramework = useCallback((frameworkId) => {
+    const target = proprietaryFrameworks.find((item) => item.id === frameworkId);
+    const nextEnabled = target ? target.enabled === false : true;
+    setCustomFrameworks((current) => current.map((item) => (
+      item.id === frameworkId ? { ...item, enabled: item.enabled === false } : item
+    )));
+    setSaveState({ status: 'idle', message: '机构自有框架状态已更新，点击“保存全部更改”后写入本地数据库。' });
+    pushNotificationEvent(
+      `机构自有框架已${nextEnabled ? '启用' : '停用'}`,
+      `框架：${target?.title || frameworkId}。当前变更尚未最终落库，请记得保存全部更改。`,
+      'info',
+    );
+  }, [proprietaryFrameworks, pushNotificationEvent]);
+
+  const moveProprietaryFramework = useCallback((frameworkId, direction) => {
+    const target = proprietaryFrameworks.find((item) => item.id === frameworkId);
+    setCustomFrameworks((current) => {
+      const index = current.findIndex((item) => item.id === frameworkId);
+      if (index === -1) {
+        return current;
+      }
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= current.length) {
+        return current;
+      }
+      const next = [...current];
+      const [item] = next.splice(index, 1);
+      next.splice(targetIndex, 0, item);
+      return next;
+    });
+    setSaveState({ status: 'idle', message: '机构自有框架优先级已调整，点击“保存全部更改”后写入本地数据库。' });
+    pushNotificationEvent(
+      '机构自有框架优先级已调整',
+      `框架：${target?.title || frameworkId}，方向：${direction === 'up' ? '上移' : '下移'}。`,
+      'info',
+    );
+  }, [proprietaryFrameworks, pushNotificationEvent]);
 
   return (
     <div className="flex flex-col h-full bg-gray-50 rounded-xl overflow-hidden relative">
       {/* Header */}
       <div className="bg-white px-8 py-6 border-b border-gray-200 flex items-center justify-between shadow-sm z-10">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <SlidersHorizontal className="text-blue-600" />
-            系统与方法论设置
-          </h2>
+          <div className="flex flex-wrap items-center gap-3 mb-2">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <SlidersHorizontal className="text-blue-600" />
+              系统与方法论设置
+            </h2>
+            <DataSourceBadge
+              source={methodologySource}
+              error={methodologyError}
+              variant="hybrid"
+              label={methodologySource === 'sdk' ? 'SDK 控制面 / 本地方法论配置' : undefined}
+              title={methodologySource === 'sdk' ? '模型路由、知识范围与运行时上下文来自 SDK；方法论开关和机构自有框架由本地配置承载。' : undefined}
+            />
+          </div>
           <p className="text-sm text-gray-500 mt-1">配置 企数睿思 (QEESHU RUISI) 的底层思考逻辑与参考框架</p>
         </div>
-        <button className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition shadow-sm">
+        <button
+          onClick={handleSaveMethodology}
+          disabled={!isLocalMode}
+          className={`px-6 py-2 rounded-md font-medium transition shadow-sm inline-flex items-center gap-2 ${
+            isLocalMode ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 text-gray-500'
+          }`}
+        >
+          <Save size={16} />
           保存全部更改
         </button>
       </div>
@@ -82,6 +308,55 @@ export default function Settings() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-8 relative">
         <div className="max-w-5xl mx-auto space-y-8">
+          {saveState.message ? (
+            <div className={`rounded-2xl px-5 py-4 text-sm ${
+              saveState.status === 'error'
+                ? 'border border-rose-200 bg-rose-50 text-rose-800'
+                : 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+            }`}>
+              {saveState.message}
+            </div>
+          ) : null}
+
+          <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-2xl border border-gray-200 p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">方法论页当前可验证的 SDK 能力</h3>
+                <p className="text-sm text-gray-500 mt-1">这里展示真实模型路由、知识范围与运行时上下文。机构自有框架若未上传，则显示空态而不再展示默认预置库。</p>
+              </div>
+              <div className="rounded-xl border border-white/70 bg-white/80 px-4 py-3 text-sm">
+                <div className="text-xs uppercase tracking-wide text-gray-500">当前工作空间 / Runtime</div>
+                <div className="mt-2 font-semibold text-gray-900">{methodologySnapshot.runtime.workspaceLabel} / {methodologySnapshot.runtime.runtimeLabel}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-4 mt-5">
+              <SnapshotCard title="路由模型" value={methodologySnapshot.routeProfile.resolvedModel || '未返回'} />
+              <SnapshotCard title="Provider 数" value={`${methodologySnapshot.routeProfile.configuredProviderCount || providerSummary.length} 个`} />
+              <SnapshotCard title="知识资产" value={`${methodologySnapshot.knowledge.assetCount} 项`} />
+              <SnapshotCard title="运行时状态" value={methodologySnapshot.runtimeState.runtimeStatus || 'unknown'} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="rounded-xl border border-blue-100 bg-white p-4">
+                <p className="text-sm font-semibold text-gray-900">当前知识范围</p>
+                <div className="mt-3 space-y-2 text-sm text-gray-600">
+                  <p><span className="font-medium text-gray-900">WatchDir：</span>{methodologySnapshot.knowledge.watchDir}</p>
+                  <p><span className="font-medium text-gray-900">Indexed：</span>{methodologySnapshot.knowledge.indexedCount}/{methodologySnapshot.knowledge.assetCount}</p>
+                  <p><span className="font-medium text-gray-900">Last Sync：</span>{methodologySnapshot.knowledge.lastSyncAt || '未返回'}</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-semibold text-amber-900">这页还缺的 SDK/API 能力</p>
+                <ul className="mt-3 space-y-2 text-xs text-amber-800">
+                  {missingApis.map((item) => (
+                    <li key={item}>- {item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
 
           {/* Strategy Setting */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -90,6 +365,11 @@ export default function Settings() {
               <h3 className="font-bold text-lg text-gray-900">AI 思考策略与框架调用优先级</h3>
             </div>
             <div className="p-6">
+              <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                {isLocalMode
+                  ? '当前“思考策略”与框架开关会写入本地桌面数据库，重开应用后仍然保留。'
+                  : '当前“思考策略”开关仍是页面本地状态，用来验证未来的策略持久化接口应该长什么样。'}
+              </div>
               <div className="grid grid-cols-3 gap-4">
                 <StrategyCard 
                   id="mixed" current={strategy} onClick={() => setStrategy('mixed')}
@@ -170,11 +450,24 @@ export default function Settings() {
                   <Library className="text-purple-600" size={20} />
                   <h3 className="font-bold text-gray-900">机构自有理论框架管理 (IP)</h3>
                 </div>
-                <button className="flex items-center gap-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded transition shadow-sm">
+                <button
+                  onClick={openFrameworkFilePicker}
+                  disabled={!isLocalMode}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition shadow-sm ${
+                    isLocalMode
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}
+                >
                   <UploadCloud size={14} /> 导入新框架
                 </button>
               </div>
               <div className="p-6 flex-1 bg-gray-50/50">
+                <div className="mb-4 rounded-lg border border-dashed border-purple-200 bg-white px-4 py-3 text-sm text-purple-800">
+                  {isLocalMode
+                    ? '这里已经支持把机构自有框架元数据写入本地数据库；如果还没有上传任何方法论文档，会保持空列表。'
+                    : '这块当前还没有专属云端框架库；若未接本地数据，就不会再展示默认机构框架。'}
+                </div>
                 
                 {strategy === 'public' && (
                   <div className="mb-4 flex items-start gap-2 bg-amber-50 text-amber-700 p-3 rounded-lg border border-amber-200 text-sm">
@@ -183,13 +476,62 @@ export default function Settings() {
                   </div>
                 )}
 
-                <div className="space-y-3">
-                  <ProprietaryItem title="供应链四象限评估模型_V2.0" date="2023.11 更新" />
-                  <ProprietaryItem title="企业数字化成熟度度量体系 (六维)" date="2024.01 更新" />
-                  <ProprietaryItem title="零售门店坪效诊断漏斗模型" date="2023.08 更新" />
-                </div>
+                {proprietaryFrameworks.length > 0 ? (
+                  <div className="space-y-3">
+                    {proprietaryFrameworks.map((item, index) => (
+                      <ProprietaryItem
+                        key={item.id || item.title}
+                        framework={item}
+                        index={index}
+                        total={proprietaryFrameworks.length}
+                        title={item.title}
+                        date={item.date}
+                        enabled={item.enabled !== false}
+                        onOpen={() => setSelectedFramework({
+                          title: item.title,
+                          desc: item.desc || item.extractSummary || '机构自有方法论',
+                          dimensions: item.dimensions || [],
+                          application: item.application || '激活后将作为机构自有框架优先参与诊断与撰写。',
+                          sourceType: item.sourceType,
+                          sourcePath: item.sourcePath,
+                          preview: item.preview,
+                          extractSummary: item.extractSummary,
+                          isCustom: true,
+                        })}
+                        onToggle={isLocalMode ? () => toggleProprietaryFramework(item.id) : undefined}
+                        onMoveUp={isLocalMode ? () => moveProprietaryFramework(item.id, 'up') : undefined}
+                        onMoveDown={isLocalMode ? () => moveProprietaryFramework(item.id, 'down') : undefined}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-purple-200 bg-white px-5 py-8 text-center text-sm text-purple-800">
+                    当前还没有机构自有框架。可上传本地方法论文档后，再在这里查看、启停和调整优先级。
+                  </div>
+                )}
                 
-                <div className="mt-6 border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center text-gray-500 bg-white hover:bg-gray-50 hover:border-blue-400 transition cursor-pointer">
+                <div
+                  className="mt-6 border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center text-gray-500 bg-white hover:bg-gray-50 hover:border-blue-400 transition cursor-pointer"
+                  onClick={openFrameworkFilePicker}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const file = event.dataTransfer.files?.[0];
+                    if (!file) {
+                      return;
+                    }
+                    setImportedFrameworkFile({
+                      name: file.name,
+                      path: file.path || '',
+                      size: file.size,
+                    });
+                    setCustomFrameworkForm({
+                      title: file.name.replace(/\.[^.]+$/, ''),
+                      desc: inferFrameworkDescription(file.name),
+                    });
+                    setCreateFrameworkOpen(true);
+                  }}
+                >
                   <UploadCloud size={32} className="mb-2 text-gray-400" />
                   <p className="text-sm font-bold text-gray-700">拖拽或点击上传内部培训手册/方法论文档</p>
                   <p className="text-xs mt-1">支持 PDF, PPT, Word 等格式，AI 将自动提炼结构作为私有判断框架</p>
@@ -226,6 +568,19 @@ export default function Settings() {
                 {selectedFramework.desc}
               </p>
 
+              {selectedFramework.extractSummary ? (
+                <div className="mb-6 rounded-xl border border-purple-100 bg-purple-50 px-4 py-4">
+                  <div className="text-sm font-semibold text-purple-900">本地提炼摘要</div>
+                  <p className="mt-2 text-sm leading-relaxed text-purple-800">{selectedFramework.extractSummary}</p>
+                  {selectedFramework.sourceType || selectedFramework.sourcePath ? (
+                    <div className="mt-3 space-y-1 text-xs text-purple-700">
+                      {selectedFramework.sourceType ? <p>来源格式：{selectedFramework.sourceType}</p> : null}
+                      {selectedFramework.sourcePath ? <p className="break-all">来源路径：{selectedFramework.sourcePath}</p> : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               {/* Visualization Placeholder */}
               <div className="w-full h-48 bg-gray-100 rounded-xl border border-gray-200 flex flex-col items-center justify-center mb-8 relative overflow-hidden group">
                 {selectedFramework.imageUrl ? (
@@ -244,13 +599,19 @@ export default function Settings() {
               {/* Dimensions */}
               <div className="mb-8">
                 <h4 className="text-sm font-bold text-gray-900 mb-3 border-l-4 border-blue-500 pl-2">包含诊断维度</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedFramework.dimensions.map((dim, idx) => (
-                    <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-blue-100">
-                      {dim}
-                    </span>
-                  ))}
-                </div>
+                {selectedFramework.dimensions && selectedFramework.dimensions.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedFramework.dimensions.map((dim, idx) => (
+                      <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-blue-100">
+                        {dim}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-500">
+                    当前还没有可展示的结构化维度信息，后续接入 framework registry / 文档提炼能力后会在这里呈现。
+                  </div>
+                )}
               </div>
 
               {/* AI Application Info */}
@@ -263,6 +624,18 @@ export default function Settings() {
                   {selectedFramework.application}
                 </p>
               </div>
+
+              {selectedFramework.preview ? (
+                <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
+                  <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <FileText size={16} />
+                    文档预览摘录
+                  </h4>
+                  <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap">
+                    {selectedFramework.preview}
+                  </p>
+                </div>
+              ) : null}
 
             </div>
             
@@ -277,6 +650,61 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {createFrameworkOpen ? (
+        <div className="absolute inset-0 z-50 flex items-center justify-center animate-fade-in">
+          <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setCreateFrameworkOpen(false)}></div>
+          <div className="relative z-10 w-full max-w-xl rounded-2xl border border-gray-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+              <h3 className="text-lg font-bold text-gray-900">新增机构自有框架</h3>
+              <button onClick={() => setCreateFrameworkOpen(false)} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-4 px-6 py-5">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-700">框架名称</span>
+                <input
+                  value={customFrameworkForm.title}
+                  onChange={(event) => setCustomFrameworkForm((current) => ({ ...current, title: event.target.value }))}
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none focus:border-purple-500"
+                  placeholder="例如：销售驾驶舱经营诊断模型"
+                />
+              </label>
+              {importedFrameworkFile ? (
+                <div className="rounded-xl border border-purple-100 bg-purple-50 px-4 py-3 text-sm text-purple-800">
+                  <div className="font-semibold">已选择本地方法论文档</div>
+                  <div className="mt-1 break-all text-xs">{importedFrameworkFile.path || importedFrameworkFile.name}</div>
+                </div>
+              ) : null}
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-700">简要说明</span>
+                <textarea
+                  rows={4}
+                  value={customFrameworkForm.desc}
+                  onChange={(event) => setCustomFrameworkForm((current) => ({ ...current, desc: event.target.value }))}
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none focus:border-purple-500"
+                  placeholder="描述这个方法论主要适用于哪些业务诊断场景"
+                />
+              </label>
+              <div className="flex justify-end gap-3 pt-2">
+                <button onClick={() => setCreateFrameworkOpen(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">取消</button>
+                <button onClick={handleCreateFramework} className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 inline-flex items-center gap-2">
+                  <Plus size={14} />
+                  保存框架
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <input
+        ref={frameworkFileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFrameworkFileSelected}
+      />
 
     </div>
   );
@@ -330,20 +758,58 @@ function FrameworkToggle({ title, desc, active, onToggle, onClick }) {
   );
 }
 
-function ProprietaryItem({ title, date }) {
+function ProprietaryItem({ framework, index, total, title, date, enabled = true, onOpen, onToggle, onMoveUp, onMoveDown }) {
   return (
-    <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-sm flex justify-between items-center group hover:border-purple-300 transition">
-      <div className="flex items-center gap-3">
+    <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-sm flex justify-between items-center gap-3 group hover:border-purple-300 transition">
+      <button type="button" className="flex items-center gap-3 text-left flex-1 min-w-0" onClick={onOpen}>
         <div className="bg-purple-100 text-purple-600 p-1.5 rounded">
           <BookOpen size={16} />
         </div>
-        <div>
+        <div className="min-w-0">
           <h4 className="text-sm font-bold text-gray-800 group-hover:text-purple-700 transition">{title}</h4>
           <p className="text-[11px] text-gray-400 mt-0.5">{date}</p>
+          {framework?.extractSummary ? (
+            <p className="mt-1 truncate text-xs text-gray-500">{framework.extractSummary}</p>
+          ) : null}
         </div>
-      </div>
-      <div className="text-emerald-500 text-xs font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded">
-        <CheckCircle2 size={12} /> 优先调用
+      </button>
+      <div className="flex items-center gap-2 shrink-0">
+        <div className={`text-xs font-bold flex items-center gap-1 px-2 py-1 rounded ${
+          enabled
+            ? 'text-emerald-500 bg-emerald-50'
+            : 'text-gray-400 bg-gray-100'
+        }`}>
+          <CheckCircle2 size={12} /> {enabled ? '优先调用' : '未启用'}
+        </div>
+        {onMoveUp ? (
+          <button
+            type="button"
+            disabled={index === 0}
+            onClick={onMoveUp}
+            className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+          >
+            <ArrowUp size={14} />
+          </button>
+        ) : null}
+        {onMoveDown ? (
+          <button
+            type="button"
+            disabled={index === total - 1}
+            onClick={onMoveDown}
+            className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+          >
+            <ArrowDown size={14} />
+          </button>
+        ) : null}
+        {onToggle ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+          >
+            {enabled ? '停用' : '启用'}
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -364,5 +830,14 @@ function BrainIcon({ className }) {
       <path d="M6 18a4 4 0 0 1-1.967-.516"/>
       <path d="M19.967 17.484A4 4 0 0 1 18 18"/>
     </svg>
+  );
+}
+
+function SnapshotCard({ title, value }) {
+  return (
+    <div className="rounded-xl border border-white/70 bg-white/80 px-4 py-3">
+      <div className="text-xs uppercase tracking-wide text-gray-500">{title}</div>
+      <div className="mt-2 text-sm font-semibold text-gray-900 break-all">{value}</div>
+    </div>
   );
 }

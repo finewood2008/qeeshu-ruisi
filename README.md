@@ -71,33 +71,169 @@ Powered by the Qee-Box edge computing terminal and the QEECLAW RAG engine backen
 
 ## 🛠️ 技术栈 (Tech Stack)
 
-*   **框架:** React 18 (Create React App)
+*   **框架:** React 19 (Create React App)
 *   **样式:** Tailwind CSS
 *   **图标库:** Lucide React
 *   **数据可视化:** Recharts
-*   **部署环境:** GitHub Pages
+*   **SDK 接入:** `@qeeclaw/core-sdk` + `@qeeclaw/product-sdk`
+*   **部署环境:** GitHub Pages / 本地 SDK 联调
+
+---
+
+## 🔌 QeeClaw SDK 真实产品验证模式
+
+当前目录已经切到“真实产品接 SDK”的开发方式：
+
+*   工作台、知识检索、资产页、CRM beta 视图、账号页已经接入 `QeeClaw SDK`
+*   `企数睿思` 本身不需要独立后端，前端可直接连接 `QeeClaw Platform API`
+*   面向客户的最小配置面收口为：`baseUrl + API Key`
+*   `runtimeType` 固定为 `openclaw`
+*   默认工作空间会根据 API Key 自动识别，无需手工传 `teamId / agentId`
+*   当前使用的是 **monorepo 内本地 file dependency**
+*   也就是说，这一版默认假设项目位于：
+
+```bash
+qs-nexus-aos/
+  sdk/
+  qeeshu-ruisi/
+```
+
+如果只把 `qeeshu-ruisi` 单独拎出来运行，需要把本地依赖改回正式 NPM 包版本。
+
+但需要特别注意：
+
+*   `企数睿思` 当前是 **SDK 验证样板 + 产品蓝本**
+*   不是“所有页面都已经完成真实业务开发”的成品
+*   已经接入本地真实业务闭环的页面主要是：
+*   `Dashboard`
+*   `Search` 的检索结果区
+*   `Assets` 的本地知识资产登记与设备态区
+*   `CRM` 的本地客户资料与商机管理
+*   `AI Writer` 的本地草稿保存与回读
+*   `System Settings` 的接入与环境诊断区
+*   当前仍然偏样板的页面主要是：
+*   `Search` 右侧追问面板
+*   `AI Writer` 的 AI 生成执行链路
+*   `Methodology` 的正式策略持久化能力
+
+对外更安全的表述应该是：
+
+> 这是一个用于验证 `QeeClaw SDK`、承载客户产品化开发的前端样板工程，而不是已经完整交付的最终业务产品。
+
+更详细的验证说明请看：
+👉 **[QEECLAW_SDK_REAL_PRODUCT_VALIDATION.md](./QEECLAW_SDK_REAL_PRODUCT_VALIDATION.md)**
+
+页面粒度的能力映射请看：
+👉 **[QEECLAW_SDK_PAGE_CAPABILITY_MATRIX.md](./QEECLAW_SDK_PAGE_CAPABILITY_MATRIX.md)**
+
+桌面版 `ruisi` 的本地优先方案请看：
+👉 **[docs/README.md](./docs/README.md)**
 
 ---
 
 ## 🚀 快速启动 (Quick Start)
 
-如果您希望在本地运行或二次开发此项目 / If you wish to run or develop this project locally:
+如果您希望在当前 monorepo 中运行这套“真实产品 + SDK 联调”版本：
 
 ```bash
-# 1. 克隆仓库 Clone the repository
-git clone https://github.com/finewood2008/qeeshu-ruisi.git
+# 1. 进入目录
+cd qeeshu-ruisi
 
-# 2. 进入目录 Navigate to the directory
-cd stm-ai-brainbox-gui
+# 2. 复制环境变量模板
+cp .env.example .env.local
 
-# 3. 安装依赖 Install dependencies
+# 3. 如需本地 mock server，可先启动 QeeClaw Core SDK 自带 mock
+npm run mock:platform
+
+# 4. 安装依赖
 npm install
 
-# 4. 启动开发服务器 Start the development server
+# 5. 启动开发服务器
 npm start
 ```
+
 浏览器将自动打开 `http://localhost:3000`。
-The browser will automatically open `http://localhost:3000`.
+
+如果要以桌面端本地优先模式启动：
+
+```bash
+# 先启动前端开发服务器
+npm run dev
+
+# 再启动 Electron 桌面壳
+npm run desktop:dev
+```
+
+如果已经完成 `npm run build`，也可以直接启动桌面产物：
+
+```bash
+npm run desktop:start
+```
+
+默认情况下：
+
+*   `REACT_APP_QEECLAW_MODE=auto`
+*   有真实 `baseUrl/API Key` 时走 SDK
+*   没有配置时自动回退到本地样板数据
+*   工作空间由 API Key 自动识别
+*   `runtimeType` 固定为 `openclaw`
+
+如果是客户本地使用，不一定要改 `.env.local`。启动应用后，也可以直接进入“个人账号与偏好”页面，在“本地接入配置”中填写：
+
+```bash
+baseUrl
+apiKey
+```
+
+保存后页面会自动刷新，并切换到真实平台。
+
+当前版本在首次打开且未配置连接时，还会默认进入“首次接入引导页”，客户可以直接在首屏填写 `baseUrl + API Key`，也可以先跳过查看样板数据。
+
+如果要做严格的 SDK 联调，请把 `.env.local` 里的模式改成：
+
+```bash
+REACT_APP_QEECLAW_MODE=sdk
+```
+
+如果要切换到真实线上环境，只需要修改：
+
+```bash
+REACT_APP_QEECLAW_BASE_URL=https://your-real-host
+REACT_APP_QEECLAW_API_KEY=sk-your-real-api-key
+```
+
+说明：
+
+*   `.env.local` 更适合研发联调
+*   页面内“本地接入配置”更适合客户本地安装包或桌面端使用
+
+---
+
+## ✅ 发版后最小验证
+
+如果后端刚发布，或者你怀疑某些接口还没有切到支持 `API Key` 的新版本，建议直接跑一遍下面这个脚本：
+
+```bash
+API_KEY=sk-xxxx bash scripts/verify-ruisi-api-key-routes.sh https://paas.qeeshu.com
+```
+
+这个脚本会自动完成：
+
+*   用 `API Key` 请求 `/api/users/me/context`
+*   自动解析默认工作空间 `team_id`
+*   验证 `ruisi` 当前会用到的关键接口：
+*   `/api/platform/models`
+*   `/api/platform/models/runtimes`
+*   `/api/billing/wallet`
+*   `/api/platform/devices`
+*   `/api/platform/conversations`
+*   `/api/platform/knowledge/search`
+*   `/api/platform/knowledge/config`
+*   `/api/workflows`
+*   `/api/platform/audit/summary`
+*   `/api/platform/audit/events`
+
+如果这里都返回 `200`，而页面仍然异常，问题大概率就在前端构建产物或浏览器缓存；如果这里仍有 `401/404/405`，优先检查线上后台是否已经切到最新后端版本。
 
 ---
 *Powered by QEECLAW Engine.*

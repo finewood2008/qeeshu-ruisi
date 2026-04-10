@@ -1,8 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+jest.mock('recharts', () => {
+  const actual = jest.requireActual('recharts');
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }) => <div style={{ width: 800, height: 240 }}>{children}</div>,
+  };
+});
+
+test('renders qeeshu ruisi shell', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(screen.getByText('QEESHU RUISI')).toBeInTheDocument();
 });

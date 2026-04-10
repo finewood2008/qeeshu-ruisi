@@ -1,0 +1,40 @@
+{
+  "appId": "com.qeeshu.ruisi",
+  "productName": "QeeShu Ruisi",
+  "asar": true,
+  "directories": {
+    "output": "release",
+    "buildResources": "electron/build-resources"
+  },
+  "files": [
+    "build/**/*",
+    "electron/**/*",
+    "node_modules/**/*",
+    "package.json"
+  ],
+  "extraMetadata": {
+    "main": "electron/main.js"
+  },
+  "mac": {
+    "category": "public.app-category.business",
+    "target": [
+      "dmg",
+      "zip"
+    ],
+    "artifactName": "QeeShu-Ruisi-${version}-${arch}.${ext}"
+  },
+  "win": {
+    "target": [
+      "nsis",
+      "zip"
+    ],
+    "artifactName": "QeeShu-Ruisi-${version}-${arch}.${ext}"
+  },
+  "linux": {
+    "target": [
+      "AppImage",
+      "tar.gz"
+    ],
+    "artifactName": "QeeShu-Ruisi-${version}-${arch}.${ext}"
+  }
+}
