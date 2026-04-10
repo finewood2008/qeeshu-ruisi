@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP_DIR="$ROOT_DIR/qeeshu-ruisi"
+APP_DIR="$ROOT_DIR"
 CONFIG_FILE="$APP_DIR/electron-builder.json"
 TARGET="${1:-default}"
 BUILDER_VERSION="${ELECTRON_BUILDER_VERSION:-25.1.8}"
