@@ -144,7 +144,7 @@ export const qeeclawRuntime = Object.freeze({
   writerTimeoutMs,
   isHermes: runtimeType === 'hermes',
   isOpenClaw: runtimeType === 'openclaw',
-  hermesBridgeUrl: (process.env.REACT_APP_HERMES_BRIDGE_URL || 'http://127.0.0.1:21737').replace(/\/+$/, ''),
+  hermesBridgeUrl: (process.env.REACT_APP_HERMES_BRIDGE_URL || 'http://127.0.0.1:21747').replace(/\/+$/, ''),
 });
 
 let coreClient;
