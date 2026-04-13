@@ -284,6 +284,7 @@ function createDesktopServices({ userDataPath, safeStorage }) {
     const baseUrl = normalizeBaseUrl(payload?.baseUrl);
     const apiKey = String(payload?.apiKey || payload?.token || '').trim();
     const scope = sanitizeScope(payload?.scope);
+    const runtimeType = payload?.runtimeType || payload?.runtime_type || 'openclaw';
 
     if (!baseUrl || !apiKey) {
       throw new Error('请先填写完整的 baseUrl 与 API Key。');
@@ -293,7 +294,7 @@ function createDesktopServices({ userDataPath, safeStorage }) {
       id: 'workspace-default',
       workspaceName: '默认工作空间',
       baseUrl,
-      runtimeType: 'openclaw',
+      runtimeType,
       scope,
       maskedApiKey: maskApiKey(apiKey),
     });

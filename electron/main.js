@@ -1,9 +1,41 @@
 const path = require('node:path');
+const fs = require('node:fs');
+const { spawn } = require('node:child_process');
 const { app, BrowserWindow, ipcMain, safeStorage } = require('electron');
 const { createDesktopServices } = require('./services/desktop-services');
 
 let mainWindow;
 let desktopServices;
+let backendProcess = null;
+
+function startBackendServer() {
+  const backendDir = app.isPackaged
+    ? path.join(process.resourcesPath, 'backend')
+    : path.join(__dirname, '..', 'backend-dist');
+    
+  const binPath = path.join(backendDir, 'bin', 'qeeclaw-server');
+  
+  if (fs.existsSync(binPath)) {
+    console.log('[Ruisi] 发现内置后台服务，准备启动: ', binPath);
+    backendProcess = spawn(binPath, [], {
+      env: {
+        ...process.env,
+        QEECLAW_HERMES_AGENT_DIR: path.join(backendDir, 'vendor', 'hermes-agent'),
+        QEECLAW_HUD_DIR: path.join(backendDir, 'vendor', 'hermes-hudui')
+      }
+    });
+
+    backendProcess.stdout.on('data', (data) => console.log(`[Backend]: ${data}`));
+    backendProcess.stderr.on('data', (data) => console.error(`[Backend-ERR]: ${data}`));
+    
+    backendProcess.on('close', (code) => {
+      console.log(`[Backend] 后台进程退出，退出码 ${code}`);
+      backendProcess = null;
+    });
+  } else {
+    console.log('[Ruisi] 未找到内置后台服务，将依赖外部原生运行的 Python 服务');
+  }
+}
 
 function getStartUrl() {
   return process.env.ELECTRON_START_URL || null;
@@ -43,7 +75,7 @@ function registerIpcHandlers() {
         baseUrl: '',
         apiKey: '',
         scope: 'mine',
-        runtimeType: 'openclaw',
+        runtimeType: 'hermes',
         hasStoredConfig: false,
         configSource: 'electron-main',
         storageProvider: 'electron-main',
@@ -122,6 +154,10 @@ app.whenReady().then(() => {
     safeStorage,
   });
   registerIpcHandlers();
+  
+  // 启动内嵌的 Python 后端（若是打好的包）
+  startBackendServer();
+  
   createMainWindow();
 
   app.on('activate', () => {
@@ -139,4 +175,8 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   desktopServices?.close?.();
+  if (backendProcess) {
+    console.log('[Ruisi] 关闭前终止内嵌后台服务...');
+    backendProcess.kill('SIGTERM');
+  }
 });

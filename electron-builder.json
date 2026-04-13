@@ -15,6 +15,12 @@
   "extraMetadata": {
     "main": "electron/main.js"
   },
+  "extraResources": [
+    {
+      "from": "backend-dist",
+      "to": "backend"
+    }
+  ],
   "mac": {
     "category": "public.app-category.business",
     "target": [

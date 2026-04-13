@@ -17,6 +17,13 @@ function sanitizeMode(value) {
   return 'auto';
 }
 
+function sanitizeRuntimeType(value) {
+  if (value === 'openclaw' || value === 'hermes') {
+    return value;
+  }
+  return 'hermes'; // 默认 Runtime 为 Hermes
+}
+
 function sanitizeScope(value) {
   return value === 'all' ? 'all' : 'mine';
 }
@@ -107,7 +114,11 @@ const hasStoredConfig = Boolean(
 const requestedMode = hasStoredConfig ? 'sdk' : envRequestedMode;
 const hasCredentials = Boolean(baseUrl && apiKey);
 const resolvedMode = requestedMode === 'mock' ? 'mock' : desktopAvailable ? 'local' : hasCredentials ? 'sdk' : 'mock';
-const runtimeType = 'openclaw';
+const runtimeType = sanitizeRuntimeType(
+  desktopRuntimeConfig.runtimeType ||
+  storedRuntimeConfig.runtimeType ||
+  process.env.REACT_APP_QEECLAW_RUNTIME_TYPE,
+);
 const knowledgeUploadTimeoutMs = (() => {
   const parsed = Number(process.env.REACT_APP_QEECLAW_KNOWLEDGE_UPLOAD_TIMEOUT_MS);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 360000;
@@ -131,6 +142,9 @@ export const qeeclawRuntime = Object.freeze({
   storageProvider: desktopRuntimeConfig.storageProvider || (desktopAvailable ? 'electron-main' : 'local-storage'),
   knowledgeUploadTimeoutMs,
   writerTimeoutMs,
+  isHermes: runtimeType === 'hermes',
+  isOpenClaw: runtimeType === 'openclaw',
+  hermesBridgeUrl: (process.env.REACT_APP_HERMES_BRIDGE_URL || 'http://127.0.0.1:21737').replace(/\/+$/, ''),
 });
 
 let coreClient;
@@ -291,7 +305,7 @@ export function canPersistRuntimeConfig() {
   return qeeclawRuntime.isDesktop || (typeof window !== 'undefined' && Boolean(window.localStorage));
 }
 
-export function saveRuntimeConfig({ baseUrl: nextBaseUrl, apiKey: nextApiKey, token: nextToken, scope: nextScope = 'mine' }) {
+export function saveRuntimeConfig({ baseUrl: nextBaseUrl, apiKey: nextApiKey, token: nextToken, scope: nextScope = 'mine', runtimeType: nextRuntimeType }) {
   if (!canPersistRuntimeConfig()) {
     throw new Error('当前环境不支持本地保存接入配置。');
   }
@@ -299,6 +313,7 @@ export function saveRuntimeConfig({ baseUrl: nextBaseUrl, apiKey: nextApiKey, to
   const normalizedBaseUrl = normalizeBaseUrl(nextBaseUrl);
   const normalizedApiKey = (nextApiKey || nextToken || '').trim();
   const normalizedScope = sanitizeScope(nextScope);
+  const normalizedRuntimeType = sanitizeRuntimeType(nextRuntimeType);
 
   if (!normalizedBaseUrl || !normalizedApiKey) {
     throw new Error('请先填写完整的 baseUrl 与 API Key。');
@@ -309,6 +324,7 @@ export function saveRuntimeConfig({ baseUrl: nextBaseUrl, apiKey: nextApiKey, to
       baseUrl: normalizedBaseUrl,
       apiKey: normalizedApiKey,
       scope: normalizedScope,
+      runtimeType: normalizedRuntimeType,
     });
     return;
   }
@@ -319,6 +335,7 @@ export function saveRuntimeConfig({ baseUrl: nextBaseUrl, apiKey: nextApiKey, to
       baseUrl: normalizedBaseUrl,
       apiKey: normalizedApiKey,
       scope: normalizedScope,
+      runtimeType: normalizedRuntimeType,
       updatedAt: new Date().toISOString(),
     }),
   );
@@ -333,4 +350,97 @@ export function clearRuntimeConfig() {
     return;
   }
   window.localStorage.removeItem(RUNTIME_CONFIG_STORAGE_KEY);
+}
+
+// ---------------------------------------------------------------------------
+// Hermes Bridge 交互方法
+// ---------------------------------------------------------------------------
+
+/**
+ * 检查 Hermes Bridge 健康状态。
+ * 只在 runtimeType === 'hermes' 时有意义。
+ */
+export async function checkHermesBridgeHealth() {
+  if (!qeeclawRuntime.isHermes) {
+    return { ok: false, message: '当前 Runtime 不是 Hermes' };
+  }
+
+  try {
+    const response = await fetch(`${qeeclawRuntime.hermesBridgeUrl}/health`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) {
+      return { ok: false, message: `Bridge 返回 HTTP ${response.status}` };
+    }
+    const data = await response.json();
+    return {
+      ok: data.status === 'ok',
+      version: data.version,
+      hermesAvailable: data.hermes_available,
+      pythonVersion: data.python_version,
+      message: data.message || null,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Bridge 连接失败',
+    };
+  }
+}
+
+/**
+ * 获取 Hermes Gateway 状态。
+ */
+export async function getHermesGatewayStatus() {
+  if (!qeeclawRuntime.isHermes) {
+    return { running: false, platforms: [], activePlatformCount: 0 };
+  }
+
+  try {
+    const response = await fetch(`${qeeclawRuntime.hermesBridgeUrl}/gateway/status`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) {
+      return { running: false, platforms: [], activePlatformCount: 0 };
+    }
+    return await response.json();
+  } catch {
+    return { running: false, platforms: [], activePlatformCount: 0 };
+  }
+}
+
+/**
+ * 获取 Hermes 支持的全部消息平台列表。
+ */
+export async function getHermesSupportedPlatforms() {
+  try {
+    const response = await fetch(`${qeeclawRuntime.hermesBridgeUrl}/gateway/supported-platforms`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.platforms || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 启动 / 停止 Hermes Gateway。
+ */
+export async function controlHermesGateway(action = 'start') {
+  try {
+    const response = await fetch(`${qeeclawRuntime.hermesBridgeUrl}/gateway/${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      signal: AbortSignal.timeout(10000),
+    });
+    return await response.json();
+  } catch (error) {
+    return { status: 'error', error: error instanceof Error ? error.message : 'Gateway 操作失败' };
+  }
 }

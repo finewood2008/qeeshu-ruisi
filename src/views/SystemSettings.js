@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { 
-  User, Settings as SettingsIcon, BellRing, Key, ChevronRight, LogOut, RefreshCw, Trash2, CheckCircle2, AlertCircle
+  User, Settings as SettingsIcon, BellRing, Key, ChevronRight, LogOut, RefreshCw, Trash2, CheckCircle2, AlertCircle, Wifi, WifiOff, Cpu, Globe
 } from 'lucide-react';
 import DataSourceBadge from '../components/DataSourceBadge';
 import { useAppShell } from '../AppShellContext';
@@ -17,6 +17,8 @@ import {
   clearRuntimeConfig,
   getRuntimeConfigDraft,
   saveRuntimeConfig,
+  qeeclawRuntime,
+  checkHermesBridgeHealth,
 } from '../sdk/runtime';
 
 export default function SystemSettings({ activeTab: controlledActiveTab = 'profile', onChangeTab }) {
@@ -37,6 +39,7 @@ export default function SystemSettings({ activeTab: controlledActiveTab = 'profi
   const [runtimeForm, setRuntimeForm] = useState(() => ({
     baseUrl: runtimeDraft.baseUrl,
     apiKey: runtimeDraft.apiKey,
+    runtimeType: runtimeDraft.runtimeType || 'hermes',
   }));
   const [profileForm, setProfileForm] = useState(() => ({
     displayName: storedSettings?.profile?.displayName || defaultUserSettings.profile.displayName,
@@ -65,6 +68,8 @@ export default function SystemSettings({ activeTab: controlledActiveTab = 'profi
   const [runtimeFeedback, setRuntimeFeedback] = useState(null);
   const [settingsFeedback, setSettingsFeedback] = useState(null);
   const runtimeStorageAvailable = canPersistRuntimeConfig();
+  const [hermesBridgeHealth, setHermesBridgeHealth] = useState(null);
+  const [hermesLoading, setHermesLoading] = useState(false);
 
   useEffect(() => {
     setActiveTabState(controlledActiveTab);
@@ -78,6 +83,26 @@ export default function SystemSettings({ activeTab: controlledActiveTab = 'profi
   }, [storedSettings]);
 
   const activeTab = controlledActiveTab ?? activeTabState;
+
+  // Hermes Bridge 健康检查轮询
+  useEffect(() => {
+    if (runtimeForm.runtimeType !== 'hermes') return;
+    if (activeTab !== 'access') return;
+
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const health = await checkHermesBridgeHealth();
+        if (cancelled) return;
+        setHermesBridgeHealth(health);
+      } catch {
+        // 静默失败
+      }
+    };
+    refresh();
+    const interval = setInterval(refresh, 10000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [runtimeForm.runtimeType, activeTab]);
 
   const handleTabChange = useCallback((nextTab) => {
     setActiveTabState(nextTab);
@@ -395,9 +420,60 @@ export default function SystemSettings({ activeTab: controlledActiveTab = 'profi
 
                 <div className="grid grid-cols-4 gap-4 mt-5 text-sm">
                   <StatusCard title="接入方式" value="baseUrl + API Key" />
-                  <StatusCard title="固定 Runtime" value={runtimeDraft.runtimeType === 'openclaw' ? 'OpenClaw' : runtimeDraft.runtimeType} />
+                  <StatusCard title="当前 Runtime" value={runtimeDraft.runtimeType === 'hermes' ? '🧠 Hermes Agent' : runtimeDraft.runtimeType === 'openclaw' ? '🦀 OpenClaw' : runtimeDraft.runtimeType} />
                   <StatusCard title="默认 Scope" value={runtimeDraft.scope || 'mine'} />
                   <StatusCard title="本地保存" value={runtimeStorageAvailable ? '支持' : '当前环境不支持'} />
+                </div>
+
+                {/* Runtime 选择器 */}
+                <div className="mt-6 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50/60 to-purple-50/40 p-5">
+                  <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <Cpu size={16} className="text-indigo-600" />
+                    AI Runtime 引擎选择
+                  </h4>
+                  <p className="text-xs text-gray-500 mb-4">选择底层 AI 推理引擎。Hermes Agent 是默认推荐引擎，支持 16+ 消息平台网关；OpenClaw 为传统引擎，兼容旧版配置。</p>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRuntimeForm((c) => ({ ...c, runtimeType: 'hermes' }));
+                        setRuntimeFeedback(null);
+                      }}
+                      className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+                        runtimeForm.runtimeType === 'hermes'
+                          ? 'border-indigo-500 bg-indigo-50 shadow-sm ring-2 ring-indigo-200'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">🧠</span>
+                        <span className="text-sm font-bold text-gray-900">Hermes Agent</span>
+                        <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-semibold">推荐</span>
+                      </div>
+                      <p className="text-xs text-gray-500 leading-relaxed">支持 16+ 消息平台 Gateway、多模型 Provider、流式推理</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRuntimeForm((c) => ({ ...c, runtimeType: 'openclaw' }));
+                        setRuntimeFeedback(null);
+                      }}
+                      className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+                        runtimeForm.runtimeType === 'openclaw'
+                          ? 'border-amber-500 bg-amber-50 shadow-sm ring-2 ring-amber-200'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">🦀</span>
+                        <span className="text-sm font-bold text-gray-900">OpenClaw</span>
+                        <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-semibold">传统</span>
+                      </div>
+                      <p className="text-xs text-gray-500 leading-relaxed">经典平台 API 方式，稳定可靠，适合已有部署场景</p>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 gap-5">
@@ -486,6 +562,59 @@ export default function SystemSettings({ activeTab: controlledActiveTab = 'profi
                   </div>
                 </div>
               </div>
+
+              {/* Hermes Bridge 状态面板 — 仅在选择 hermes 时显示 */}
+              {runtimeForm.runtimeType === 'hermes' && (
+                <div className="mb-8 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/50 p-6 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <Globe size={20} className="text-indigo-600" />
+                        Hermes Agent 运行状态
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">Bridge 服务的实时状态。</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setHermesLoading(true);
+                        try {
+                          const health = await checkHermesBridgeHealth();
+                          setHermesBridgeHealth(health);
+                        } finally {
+                          setHermesLoading(false);
+                        }
+                      }}
+                      disabled={hermesLoading}
+                      className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50 transition disabled:opacity-50"
+                    >
+                      <RefreshCw size={14} className={hermesLoading ? 'animate-spin' : ''} />
+                      刷新状态
+                    </button>
+                  </div>
+
+                  {/* Bridge 健康 */}
+                  <div className="mb-5">
+                    <div className={`rounded-xl border px-4 py-3 max-w-xs ${
+                      hermesBridgeHealth?.ok
+                        ? 'border-emerald-200 bg-emerald-50'
+                        : 'border-gray-200 bg-white'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        {hermesBridgeHealth?.ok
+                          ? <Wifi size={14} className="text-emerald-600" />
+                          : <WifiOff size={14} className="text-gray-400" />}
+                        <p className="text-xs uppercase tracking-wide text-gray-500">Bridge 服务</p>
+                      </div>
+                      <p className={`text-sm font-semibold ${
+                        hermesBridgeHealth?.ok ? 'text-emerald-700' : 'text-gray-500'
+                      }`}>
+                        {hermesBridgeHealth === null ? '检测中...' : hermesBridgeHealth.ok ? `v${hermesBridgeHealth.version} 运行中` : hermesBridgeHealth.message || '未连接'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
           

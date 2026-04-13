@@ -20,9 +20,10 @@ import Tasks from './views/Tasks';
 import SettingsMethodology from './views/Settings';
 import SystemSettings from './views/SystemSettings';
 import ConnectWorkspace from './views/ConnectWorkspace';
+import PlatformLogin from './views/PlatformLogin';
 import { useRuntimeSnapshot } from './hooks/useRuntimeSnapshot';
 import { AppShellProvider } from './AppShellContext';
-import { canUseBrowserBusinessData } from './sdk/runtime';
+import { canUseBrowserBusinessData, saveRuntimeConfig } from './sdk/runtime';
 import {
   addDesktopNotificationEvent,
   clearDesktopNotificationEvents,
@@ -73,6 +74,7 @@ export default function STMBoxWorkbench() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [skipOnboarding, setSkipOnboarding] = useState(false);
+  const [onboardingMode, setOnboardingMode] = useState('login'); // 'login' | 'apikey'
   const [settingsTab, setSettingsTab] = useState('access');
   const [toasts, setToasts] = useState([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -406,11 +408,28 @@ export default function STMBoxWorkbench() {
 
   const renderContent = () => {
     if (shouldShowOnboarding) {
+      if (onboardingMode === 'login') {
+        return (
+          <PlatformLogin
+            onLoginSuccess={({ baseUrl, apiKey, token, username }) => {
+              try {
+                saveRuntimeConfig({ baseUrl, apiKey: apiKey || token });
+                window.setTimeout(() => window.location.reload(), 400);
+              } catch (err) {
+                // 降级：直接刷新
+                window.location.reload();
+              }
+            }}
+            onSwitchToApiKey={() => setOnboardingMode('apikey')}
+          />
+        );
+      }
       return (
         <ConnectWorkspace
           allowDevMode={allowBrowserDevMode}
           onContinueMock={() => setSkipOnboarding(true)}
           onOpenSettings={() => setActiveTab('settings-system')}
+          onSwitchToLogin={() => setOnboardingMode('login')}
         />
       );
     }
@@ -605,7 +624,7 @@ export default function STMBoxWorkbench() {
                 <div>
                   <p className="text-sm font-semibold text-amber-900">当前未配置 QeeClaw Platform 连接</p>
                   <p className="mt-1 text-sm text-amber-800">
-                    当前尚未接入真实平台。前往“本地偏好与接入”页面，填写 `baseUrl + API Key` 后即可启用真实链路。
+                    当前尚未接入真实平台。前往"本地偏好与接入"页面，填写平台提供的 `baseUrl + API Key` 后即可启用真实链路。
                   </p>
                 </div>
                 <button

@@ -25,7 +25,7 @@ function RuntimeInfoCard({ title, value, desc }) {
   );
 }
 
-export default function ConnectWorkspace({ allowDevMode = false, onContinueMock, onOpenSettings }) {
+export default function ConnectWorkspace({ allowDevMode = false, onContinueMock, onOpenSettings, onSwitchToLogin }) {
   const runtimeDraft = useMemo(() => getRuntimeConfigDraft(), []);
   const runtimeStorageAvailable = canPersistRuntimeConfig();
   const [runtimeForm, setRuntimeForm] = useState(() => ({
@@ -83,7 +83,7 @@ export default function ConnectWorkspace({ allowDevMode = false, onContinueMock,
 
               <div className="mt-8 grid gap-4 sm:grid-cols-3">
                 <RuntimeInfoCard title="需要准备" value="2 项信息" desc="baseUrl 与 API Key" />
-                <RuntimeInfoCard title="固定 Runtime" value="OpenClaw" desc="当前版本已内置固定" />
+                <RuntimeInfoCard title="默认 Runtime" value="Hermes Agent" desc="支持 16+ 消息平台网关" />
                 <RuntimeInfoCard title="数据位置" value="本地优先" desc="业务数据默认落在当前设备" />
               </div>
 
@@ -212,6 +212,15 @@ export default function ConnectWorkspace({ allowDevMode = false, onContinueMock,
                 <RefreshCw size={16} />
                 保存并启用云端能力
               </button>
+
+              {onSwitchToLogin ? (
+                <button
+                  onClick={onSwitchToLogin}
+                  className="flex w-full items-center justify-center rounded-xl border border-blue-400/50 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
+                >
+                  使用平台账号密码登录
+                </button>
+              ) : null}
 
               {allowDevMode ? (
                 <button

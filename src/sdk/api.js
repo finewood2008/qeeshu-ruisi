@@ -123,7 +123,10 @@ function trimTitle(value, fallback) {
 }
 
 function normalizeRuntimeLabel(value) {
-  return (value || '').toLowerCase() === 'openclaw' ? 'OpenClaw' : trimTitle(value, 'OpenClaw');
+  const normalized = (value || '').toLowerCase();
+  if (normalized === 'hermes') return 'Hermes Agent';
+  if (normalized === 'openclaw') return 'OpenClaw';
+  return trimTitle(value, 'OpenClaw');
 }
 
 function normalizeKnowledgeAssetState(value) {
@@ -584,6 +587,26 @@ function normalizePlainTextWriterBlocks(text, commandKey) {
 }
 
 async function invokePlatformModel(prompt, context) {
+  // Hermes 模式：通过 Bridge 调用本地模型
+  if (qeeclawRuntime.isHermes) {
+    try {
+      const resp = await fetch(`${qeeclawRuntime.hermesBridgeUrl}/invoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, system_prompt: context === 'writer-generate' ? '你是一位专业文档写作助手。' : undefined }),
+        signal: AbortSignal.timeout(qeeclawRuntime.writerTimeoutMs || 120000),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `Bridge 返回 HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      return { text: data.text || '', model: data.model || 'hermes' };
+    } catch (error) {
+      throw new Error(`Hermes Bridge 调用失败: ${error.message}`);
+    }
+  }
+
   await ensureOpenClawRuntimeOnline();
   const core = (
     context === 'writer-generate' ||
@@ -804,6 +827,20 @@ function mapRuntimeSummaryToRuntimeState(summary) {
 }
 
 async function getOpenClawRuntimeSummary() {
+  if (qeeclawRuntime.runtimeType === 'hermes') {
+    return {
+      runtimeType: 'hermes',
+      runtimeLabel: 'Hermes Agent',
+      runtimeStatus: 'ready',
+      runtimeStage: 'standalone_server',
+      supportsDeviceBridge: false,
+      supportsManagedDownload: false,
+      supportsImRelay: false,
+      onlineTeamCount: 1, // 模拟在线让后端鉴权通行
+      notes: '由 QeeClaw Hermes Bridge 提供独立后端服务',
+    };
+  }
+
   const core = getCoreClient();
 
   try {
@@ -846,9 +883,49 @@ async function resolveRuntimeSnapshot() {
     };
   }
   if (!qeeclawRuntime.hasCredentials || qeeclawRuntime.resolvedMode !== 'sdk') {
+    // Hermes 模式下即使没有 OpenClaw 凭证，也可以通过 Bridge 获取状态
+    if (qeeclawRuntime.isHermes) {
+      try {
+        const { checkHermesBridgeHealth: checkBridge } = await import('./runtime');
+        const bridgeHealth = await checkBridge();
+        return {
+          ...runtime,
+          workspaceName: bridgeHealth.ok ? 'Hermes Agent 已连接' : 'Hermes Agent 未连接',
+          workspaceLabel: bridgeHealth.ok ? 'Hermes Agent 已连接' : '等待 Bridge 服务启动',
+          runtimeStatus: bridgeHealth.ok ? 'ready' : 'offline',
+          runtimeStage: bridgeHealth.ok ? 'hermes_bridge' : 'waiting_bridge',
+          runtimeNotes: bridgeHealth.ok
+            ? `Hermes Bridge v${bridgeHealth.version} / Python ${bridgeHealth.pythonVersion || ''}`
+            : bridgeHealth.message || '请确保 Bridge 服务已启动。',
+        };
+      } catch {
+        return runtime;
+      }
+    }
     return runtime;
   }
 
+  // Hermes 模式：使用 Bridge 健康检查
+  if (qeeclawRuntime.isHermes) {
+    try {
+      const { checkHermesBridgeHealth: checkBridge } = await import('./runtime');
+      const bridgeHealth = await checkBridge();
+      return {
+        ...runtime,
+        workspaceName: bridgeHealth.ok ? 'Hermes Agent 已连接' : 'Hermes Agent 未连接',
+        workspaceLabel: bridgeHealth.ok ? 'Hermes Agent 已连接' : '等待 Bridge 服务启动',
+        runtimeStatus: bridgeHealth.ok ? 'ready' : 'offline',
+        runtimeStage: bridgeHealth.ok ? 'hermes_bridge' : 'waiting_bridge',
+        runtimeNotes: bridgeHealth.ok
+          ? `Hermes Bridge v${bridgeHealth.version} / Python ${bridgeHealth.pythonVersion || ''}`
+          : bridgeHealth.message || '请确保 Bridge 服务已启动。',
+      };
+    } catch {
+      return runtime;
+    }
+  }
+
+  // OpenClaw 模式：使用平台 API 检查
   const runtimeSummary = await ensureOpenClawRuntimeOnline();
 
   return {
@@ -866,6 +943,77 @@ export async function loadRuntimeSnapshot() {
 }
 
 export async function loadDashboardSnapshot() {
+  if (qeeclawRuntime.isHermes) {
+    // Hermes 模式：尝试从 Bridge 获取健康信息，组装一个有意义的首页
+    let bridgeOk = false;
+    let bridgeVersion = '-';
+    let hermesAvailable = false;
+    try {
+      const resp = await fetch(`${qeeclawRuntime.hermesBridgeUrl}/health`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      });
+      if (resp.ok) {
+        const info = await resp.json();
+        bridgeOk = info.status === 'ok';
+        bridgeVersion = info.version || '-';
+        hermesAvailable = !!info.hermes_available;
+      }
+    } catch {
+      // Bridge 不可达
+    }
+
+    return {
+      statusText: bridgeOk ? '独立环境挂载中' : 'Bridge 未连接',
+      greeting: '欢迎进入企数睿思工作台',
+      subtitle: bridgeOk
+        ? '当前为本地单机 Hermes Agent 环境，Bridge 服务已连接。可通过左侧菜单使用 AI 对话、知识检索等功能。'
+        : '当前为本地单机 Hermes Agent 环境。请先启动 QeeClaw Server，然后刷新页面。',
+      healthScore: null,
+      cards: [
+        {
+          title: 'Bridge 服务',
+          value: bridgeOk ? '已连接' : '未连接',
+          trend: bridgeOk ? `v${bridgeVersion}` : '-',
+          trendText: bridgeOk ? '运行中' : '请启动 QeeClaw Server',
+          type: bridgeOk ? 'success' : 'danger',
+        },
+        {
+          title: 'AI 推理引擎',
+          value: hermesAvailable ? '就绪' : '未就绪',
+          trend: hermesAvailable ? 'Hermes' : '-',
+          trendText: hermesAvailable ? 'Agent 可用' : '等待加载',
+          type: hermesAvailable ? 'success' : 'warning',
+        },
+        {
+          title: '运行模式',
+          value: '本地',
+          trend: 'Hermes',
+          trendText: '单机独立运行',
+          type: 'info',
+        },
+        {
+          title: '数据存储',
+          value: '本地',
+          trend: '离线',
+          trendText: '业务数据留在本地',
+          type: 'info',
+        },
+      ],
+      projects: [],
+      recentAssets: [],
+      todos: [],
+      recommendation: {
+        title: '开始使用 AI 对话',
+        description: bridgeOk
+          ? 'Bridge 已连接，可以通过左侧"AI 对话"入口与 Hermes Agent 交互，进行智能问答、知识检索和任务执行。'
+          : '请先启动 QeeClaw Server（运行 start.sh），连接成功后即可使用 AI 能力。',
+        tag: bridgeOk ? '已就绪' : '待启动',
+      },
+      crmAlerts: [],
+    };
+  }
+
   if (shouldUseDesktopBusinessData()) {
     return loadLocalDashboardSnapshot();
   }
@@ -944,6 +1092,9 @@ export async function loadSearchSnapshot(query) {
   if (shouldUseDesktopBusinessData()) {
     return loadLocalSearchSnapshot(query);
   }
+  if (qeeclawRuntime.isHermes) {
+    return []; // Hermes 单机模式暂无云端知识检索
+  }
   await ensureOpenClawRuntimeOnline();
   const core = getCoreClient();
   const product = getProductClient();
@@ -974,6 +1125,21 @@ export async function loadSearchSnapshot(query) {
 export async function loadAssetsSnapshot() {
   if (shouldUseDesktopBusinessData()) {
     return loadLocalAssetsSnapshot();
+  }
+  if (qeeclawRuntime.isHermes) {
+    const runtime = await resolveRuntimeSnapshot();
+    return {
+      title: 'Hermes Agent 本地节点',
+      runtimeLabel: 'Hermes Agent',
+      statusLabel: runtime.runtimeStatus || 'ready',
+      onlineText: '本地运行中',
+      watchDir: '待配置',
+      lastSyncAt: '-',
+      assetCount: 0,
+      indexedCount: 0,
+      processingCount: 0,
+      files: [],
+    };
   }
   const runtimeSummary = await ensureOpenClawRuntimeOnline();
   const product = getProductClient({
@@ -1023,6 +1189,13 @@ export async function loadAssetsSnapshot() {
 export async function loadCrmSnapshot() {
   if (shouldUseDesktopBusinessData()) {
     return loadLocalCrmSnapshot();
+  }
+  if (qeeclawRuntime.isHermes) {
+    return {
+      note: '当前为 Hermes 本地单机模式，CRM 数据需通过本地桌面版或云端模式加载。',
+      stats: { healthy: 0, renew: 0, warning: 0 },
+      clients: [],
+    };
   }
   if (!qeeclawRuntime.hasCredentials && canUseBrowserBusinessData()) {
     return loadBrowserCrmSnapshot();
@@ -1088,6 +1261,18 @@ export async function loadSystemSnapshot() {
       runtime,
     };
   }
+  if (qeeclawRuntime.isHermes) {
+    const runtime = await resolveRuntimeSnapshot();
+    const runtimeSummary = await getOpenClawRuntimeSummary();
+    return {
+      routeProfile: { resolvedModel: 'hermes-local', provider: 'hermes-bridge' },
+      runtimeState: mapRuntimeSummaryToRuntimeState(runtimeSummary),
+      products: [],
+      wallet: { balance: null, currency: 'CNY' },
+      quota: { walletBalance: null, currency: 'CNY' },
+      runtime,
+    };
+  }
   const core = getCoreClient();
 
   const [routeProfile, runtimeSummary, quota, runtime] = await Promise.all([
@@ -1139,6 +1324,21 @@ export async function loadWriterSnapshot() {
       missingApis: buildWriterMissingApis(routeProfile, providerSummary),
     };
   }
+  if (qeeclawRuntime.isHermes) {
+    const runtime = await resolveRuntimeSnapshot();
+    const fakeRoute = { resolvedModel: 'hermes-local', provider: 'hermes-bridge' };
+    return {
+      routeProfile: fakeRoute,
+      providerSummary: [],
+      usage: { totalTokens: 0, totalRequests: 0 },
+      cost: { totalCost: 0 },
+      quota: { walletBalance: null, currency: 'CNY' },
+      products: [],
+      runtime,
+      capabilities: buildWriterCapabilities(fakeRoute, []),
+      missingApis: buildWriterMissingApis(fakeRoute, []),
+    };
+  }
   const core = getCoreClient();
 
   await ensureOpenClawRuntimeOnline();
@@ -1168,6 +1368,23 @@ export async function loadWriterSnapshot() {
 export async function loadMethodologySnapshot() {
   if (shouldUseDesktopBusinessData()) {
     return loadLocalMethodologySnapshot();
+  }
+  if (qeeclawRuntime.isHermes) {
+    const runtime = await resolveRuntimeSnapshot();
+    const runtimeSummary = await getOpenClawRuntimeSummary();
+    return {
+      routeProfile: { resolvedModel: 'hermes-local', provider: 'hermes-bridge' },
+      providerSummary: [],
+      runtimeState: mapRuntimeSummaryToRuntimeState(runtimeSummary),
+      runtime,
+      knowledge: { assetCount: 0, indexedCount: 0, watchDir: '待配置', lastSyncAt: null },
+      missingApis: [
+        'framework registry / methodology plugin catalog',
+        '私有方法论文档上传与结构提炼',
+        '组织级策略持久化与团队共享',
+        '方法论开关与 AI Writer 联动校验',
+      ],
+    };
   }
   const core = getCoreClient();
   const product = getProductClient();
@@ -1261,6 +1478,10 @@ export async function persistKnowledgeDocument(payload) {
       sourceName: trimTitle(payload?.sourceName || payload?.title, ''),
       fileBytes,
     });
+  }
+
+  if (qeeclawRuntime.isHermes) {
+    throw new Error('Hermes 本地单机模式暂不支持云端知识资产上传。请使用本地桌面版或切换至 OpenClaw 模式。');
   }
 
   if (qeeclawRuntime.resolvedMode !== 'sdk') {
