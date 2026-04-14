@@ -5,8 +5,8 @@
   "main": "electron/main.js",
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@qeeclaw/core-sdk": "file:./sdk/qeeclaw-core-sdk",
-    "@qeeclaw/product-sdk": "file:./sdk/qeeclaw-product-sdk",
+    "@qeeclaw/core-sdk": "file:../qeeclaw-sdk/packages/core-sdk",
+    "@qeeclaw/product-sdk": "file:../qeeclaw-sdk/packages/product-sdk",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -29,7 +29,7 @@
     "desktop:package:dir": "bash scripts/package-ruisi-desktop.sh dir",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "mock:platform": "node ../sdk/qeeclaw-core-sdk/examples/mock-platform-server.mjs",
+    "mock:platform": "node ../qeeclaw-sdk/packages/core-sdk/examples/mock-platform-server.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },

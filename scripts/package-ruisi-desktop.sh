@@ -140,7 +140,7 @@ log "with-openclaw: $WITH_OPENCLAW"
       else
         PYINSTALLER_CMD="python3 -m pyinstaller"
       fi
-      $PYINSTALLER_CMD --name qeeclaw-server --onefile --distpath "$BACKEND_DIST/bin" --workpath "$PROJECT_ROOT/build" --specpath "$PROJECT_ROOT" sdk/qeeclaw-hermes-bridge/bridge_server.py
+      $PYINSTALLER_CMD --name qeeclaw-server --onefile --distpath "$BACKEND_DIST/bin" --workpath "$PROJECT_ROOT/build" --specpath "$PROJECT_ROOT" qeeclaw-sdk/packages/hermes-bridge/bridge_server.py
     )
 
     log ">> [2/3] 编译 HUD 控制台前端"
