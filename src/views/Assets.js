@@ -463,7 +463,7 @@ export default function Assets() {
 
       {assetModalOpen ? (
         <AssetModal
-          mode={isLocalMode ? 'local' : isSdkMode ? 'sdk' : 'mock'}
+          mode={isLocalMode ? 'local' : isSdkMode ? 'sdk' : 'unconfigured'}
           initialForm={assetFormSeed}
           selectedFile={pendingLocalFile}
           saving={saveState.status === 'saving'}
@@ -488,7 +488,7 @@ export default function Assets() {
       {selectedFile ? (
         <AssetDetailModal
           file={selectedFile}
-          mode={isLocalMode ? 'local' : isSdkMode ? 'sdk' : 'mock'}
+          mode={isLocalMode ? 'local' : isSdkMode ? 'sdk' : 'unconfigured'}
           onClose={() => setSelectedFile(null)}
           onDownload={() => {
             downloadAssetSummary(selectedFile);

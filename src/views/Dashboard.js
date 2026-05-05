@@ -33,15 +33,15 @@ export default function Dashboard() {
     && Array.isArray(dashboard.cards)
     && dashboard.cards.length > 0,
   );
-  const isMockMode = source === 'mock';
+  const isUnconfigured = source === 'unconfigured';
   const emptyTitle = error
     ? '当前还没有可展示的真实工作台数据'
-    : isMockMode
+    : isUnconfigured
       ? '当前处于未接入状态'
       : '当前暂无首页数据';
   const emptyDescription = error
     ? error.message
-    : isMockMode
+    : isUnconfigured
       ? '请先完成 QeeClaw Platform 接入，或切到桌面本地真实数据模式后再查看首页。'
       : '接入完成后，这里会展示真实项目、知识资产、客户预警和设备状态。';
 
@@ -52,7 +52,7 @@ export default function Dashboard() {
           <div className="flex flex-wrap items-center gap-3 mb-3">
             <div className="flex items-center gap-2 text-sm font-bold text-blue-600 uppercase tracking-widest">
               <Activity size={16} className={loading ? 'animate-pulse' : ''} />
-              系统状态：{dashboard?.statusText || (error ? '待接入' : isMockMode ? '未接入' : '暂无数据')}
+              系统状态：{dashboard?.statusText || (error ? '待接入' : isUnconfigured ? '未接入' : '暂无数据')}
             </div>
             <DataSourceBadge source={source} error={error} />
           </div>

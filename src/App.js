@@ -23,7 +23,7 @@ import ConnectWorkspace from './views/ConnectWorkspace';
 import PlatformLogin from './views/PlatformLogin';
 import { useRuntimeSnapshot } from './hooks/useRuntimeSnapshot';
 import { AppShellProvider } from './AppShellContext';
-import { canUseBrowserBusinessData, saveRuntimeConfig } from './sdk/runtime';
+import { saveRuntimeConfig } from './sdk/runtime';
 import {
   addDesktopNotificationEvent,
   clearDesktopNotificationEvents,
@@ -73,7 +73,6 @@ export default function STMBoxWorkbench() {
   } = useRuntimeSnapshot();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [skipOnboarding, setSkipOnboarding] = useState(false);
   const [onboardingMode, setOnboardingMode] = useState('login'); // 'login' | 'apikey'
   const [settingsTab, setSettingsTab] = useState('access');
   const [toasts, setToasts] = useState([]);
@@ -86,8 +85,7 @@ export default function STMBoxWorkbench() {
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [notificationEvents, setNotificationEvents] = useState(() => readNotificationEvents());
   const unreadNotificationCount = useMemo(() => countUnreadNotificationEvents(notificationEvents), [notificationEvents]);
-  const shouldShowOnboarding = runtime.resolvedMode === 'mock' && activeTab !== 'settings-system' && !skipOnboarding;
-  const allowBrowserDevMode = canUseBrowserBusinessData();
+  const shouldShowOnboarding = runtime.resolvedMode === 'unconfigured' && activeTab !== 'settings-system';
 
   const formatEventTime = useCallback((value) => {
     if (!value) {
@@ -426,8 +424,6 @@ export default function STMBoxWorkbench() {
       }
       return (
         <ConnectWorkspace
-          allowDevMode={allowBrowserDevMode}
-          onContinueMock={() => setSkipOnboarding(true)}
           onOpenSettings={() => setActiveTab('settings-system')}
           onSwitchToLogin={() => setOnboardingMode('login')}
         />

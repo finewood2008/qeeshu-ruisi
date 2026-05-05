@@ -25,7 +25,7 @@ function RuntimeInfoCard({ title, value, desc }) {
   );
 }
 
-export default function ConnectWorkspace({ allowDevMode = false, onContinueMock, onOpenSettings, onSwitchToLogin }) {
+export default function ConnectWorkspace({ onOpenSettings, onSwitchToLogin }) {
   const runtimeDraft = useMemo(() => getRuntimeConfigDraft(), []);
   const runtimeStorageAvailable = canPersistRuntimeConfig();
   const [runtimeForm, setRuntimeForm] = useState(() => ({
@@ -219,15 +219,6 @@ export default function ConnectWorkspace({ allowDevMode = false, onContinueMock,
                   className="flex w-full items-center justify-center rounded-xl border border-blue-400/50 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
                 >
                   使用平台账号密码登录
-                </button>
-              ) : null}
-
-              {allowDevMode ? (
-                <button
-                  onClick={onContinueMock}
-                  className="flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                >
-                  进入浏览器开发模式
                 </button>
               ) : null}
 

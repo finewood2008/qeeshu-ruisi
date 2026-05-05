@@ -109,25 +109,25 @@ export default function Search() {
   }), [assetTypeFilter, results, timeRangeFilter]);
 
   const selectedData = filteredResults.find((item) => item.id === selectedId) || filteredResults[0];
-  const isMockMode = source === 'mock';
+  const isUnconfigured = source === 'unconfigured';
   const canUseRealChat = source === 'local' || source === 'sdk';
   const hasSubmittedQuery = Boolean(submittedQuery.trim());
   const emptyStateTitle = !hasSubmittedQuery
-    ? isMockMode
+    ? isUnconfigured
       ? '当前还没有接入真实知识库'
       : '先输入关键词开始检索'
     : error
       ? '当前检索接口还没有返回真实结果'
-      : isMockMode
+      : isUnconfigured
         ? '当前还没有接入真实知识库'
         : '当前查询没有命中结果';
   const emptyStateDescription = !hasSubmittedQuery
-    ? isMockMode
+    ? isUnconfigured
       ? '请先接入 QeeClaw Platform，或在桌面本地模式下导入知识资产；接入完成后，再输入关键词开始检索。'
       : '输入业务关键词后，这里会展示真实命中的知识资产；若尚未接入，可先去配置平台接入或导入本地资产。'
     : error
       ? error.message
-      : isMockMode
+      : isUnconfigured
         ? '请先接入 QeeClaw Platform，或在桌面本地模式下导入知识资产后，再进行诊断检索。'
         : '可尝试调整关键词、放宽筛选条件，或先去“资产管理”导入资料。';
 

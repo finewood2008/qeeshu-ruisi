@@ -16,7 +16,7 @@ function resolveSource(allowOfflineLoad, offlineSource) {
   if (allowOfflineLoad) {
     return offlineSource;
   }
-  return 'mock';
+  return 'unconfigured';
 }
 
 export function useSdkViewData(loader, options = {}) {
@@ -39,7 +39,7 @@ export function useSdkViewData(loader, options = {}) {
           data: null,
           error: null,
           loading: false,
-          source: 'mock',
+          source: 'unconfigured',
         });
         return;
       }
@@ -82,7 +82,7 @@ export function useSdkViewData(loader, options = {}) {
           data: null,
           error: normalizedError,
           loading: false,
-          source: 'mock',
+          source: 'unconfigured',
         });
       }
     }

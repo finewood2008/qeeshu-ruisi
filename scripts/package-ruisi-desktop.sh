@@ -30,7 +30,7 @@ Environment:
   ELECTRON_BUILDER_VERSION   electron-builder 版本，默认 25.1.8
 
 Flags:
-  --with-openclaw            打包时包含并启用传统 OpenClaw 作为默认选项
+  --with-openclaw            兼容参数；当前桌面包默认使用云端 https://paas.qeeshu.com
 
 Examples:
   bash scripts/package-ruisi-desktop.sh
@@ -53,18 +53,27 @@ require_cmd() {
 
 WITH_OPENCLAW=0
 WITH_ALL_IN_ONE=0
+POSITIONAL_ARGS=()
 for arg in "$@"; do
-  if [[ "$arg" == "--with-openclaw" ]]; then
-    WITH_OPENCLAW=1
-    # 从参数列表中移除该 flag
-    set -- "${@/#--with-openclaw/}"
-  elif [[ "$arg" == "--all-in-one" ]]; then
-    WITH_ALL_IN_ONE=1
-    set -- "${@/#--all-in-one/}"
-  fi
+  case "$arg" in
+    --with-openclaw)
+      WITH_OPENCLAW=1
+      ;;
+    --all-in-one)
+      WITH_ALL_IN_ONE=1
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$arg")
+      ;;
+  esac
 done
 
-TARGET="${1:-default}"
+if [[ "$WITH_ALL_IN_ONE" == "1" ]]; then
+  echo "Ruisi customer package must not include a local backend. Use HubOS packaging for self-hosted backend bundles." >&2
+  exit 1
+fi
+
+TARGET="${POSITIONAL_ARGS[0]:-default}"
 
 if [[ "${TARGET:-}" == "-h" || "${TARGET:-}" == "--help" ]]; then
   usage
@@ -111,56 +120,19 @@ log "app dir: $APP_DIR"
 log "target: $TARGET"
 log "version: $PACKAGE_VERSION"
 log "with-openclaw: $WITH_OPENCLAW"
+log "all-in-one backend: disabled for Ruisi customer package"
 
 (
   cd "$APP_DIR"
 
   log "构建前端静态资源"
-  if [[ "$WITH_OPENCLAW" == "1" ]]; then
-    export REACT_APP_QEECLAW_RUNTIME_TYPE="openclaw"
-  else
-    export REACT_APP_QEECLAW_RUNTIME_TYPE="hermes"
-  fi
+  export REACT_APP_QEECLAW_RUNTIME_TYPE="openclaw"
+  export REACT_APP_QEECLAW_BASE_URL="${REACT_APP_QEECLAW_BASE_URL:-https://paas.qeeshu.com}"
   npm run build:desktop
 
-  BACKEND_DIST="$APP_DIR/backend-dist"
-  if [[ "$WITH_ALL_IN_ONE" == "1" ]]; then
-    log "开始内嵌 Python 后台沙箱构建与同步 (All-in-One DMG 集成)..."
-    PROJECT_ROOT="$(cd "$APP_DIR/.." && pwd)"
-    rm -rf "$BACKEND_DIST"
-    mkdir -p "$BACKEND_DIST/bin" "$BACKEND_DIST/vendor"
-    
-    log ">> [1/3] PyInstaller 打包 bridge_server.py"
-    (
-      cd "$PROJECT_ROOT"
-      if command -v pyinstaller &>/dev/null; then
-        PYINSTALLER_CMD="pyinstaller"
-      elif [ -f "$HOME/Library/Python/3.9/bin/pyinstaller" ]; then
-        PYINSTALLER_CMD="$HOME/Library/Python/3.9/bin/pyinstaller"
-      else
-        PYINSTALLER_CMD="python3 -m pyinstaller"
-      fi
-      $PYINSTALLER_CMD --name qeeclaw-server --onefile --distpath "$BACKEND_DIST/bin" --workpath "$PROJECT_ROOT/build" --specpath "$PROJECT_ROOT" qeeclaw-sdk/packages/hermes-bridge/bridge_server.py
-    )
-
-    log ">> [2/3] 编译 HUD 控制台前端"
-    if [ -d "$PROJECT_ROOT/vendor/hermes-hudui/frontend" ]; then
-      (cd "$PROJECT_ROOT/vendor/hermes-hudui/frontend" && npm install --no-audit --no-fund && npm run build)
-      ln -sfn "$PROJECT_ROOT/vendor/hermes-hudui/frontend/dist" "$PROJECT_ROOT/vendor/hermes-hudui/backend/static"
-    fi
-
-    log ">> [3/3] 同步无状态 Vendor 离线资源库"
-    if [ -d "$PROJECT_ROOT/vendor/hermes-agent" ]; then
-      rsync -a --exclude '.git' --exclude '__pycache__' --exclude '.venv' --exclude 'venv' --exclude '*.pyc' "$PROJECT_ROOT/vendor/hermes-agent" "$BACKEND_DIST/vendor/"
-    fi
-    if [ -d "$PROJECT_ROOT/vendor/hermes-hudui" ]; then
-      rsync -a --exclude '.git' --exclude '__pycache__' --exclude 'node_modules' --exclude '.venv' --exclude 'venv' --exclude '*.pyc' "$PROJECT_ROOT/vendor/hermes-hudui" "$BACKEND_DIST/vendor/"
-    fi
-  else
-    log "纯客户端构建，跳过内嵌 Python 后台打包..."
-    # 确保文件夹存在以免 electron-builder 找不到资源报错
-    mkdir -p "$BACKEND_DIST"
-  fi
+  rm -rf "$APP_DIR/backend-dist"
+  rm -rf "$APP_DIR/release/mac-"*
+  rm -f "$APP_DIR/release/QeeShu-Ruisi-${PACKAGE_VERSION}-"*
 
   if [[ "$DISABLE_CODESIGN" == "1" ]]; then
     export CSC_IDENTITY_AUTO_DISCOVERY=false

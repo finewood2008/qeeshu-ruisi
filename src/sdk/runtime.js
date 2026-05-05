@@ -11,7 +11,7 @@ import { normalizeSdkError } from './error-utils';
 const RUNTIME_CONFIG_STORAGE_KEY = 'qeeshu_ruisi_runtime_config_v1';
 
 function sanitizeMode(value) {
-  if (value === 'sdk' || value === 'mock') {
+  if (value === 'sdk') {
     return value;
   }
   return 'auto';
@@ -113,7 +113,7 @@ const hasStoredConfig = Boolean(
 );
 const requestedMode = hasStoredConfig ? 'sdk' : envRequestedMode;
 const hasCredentials = Boolean(baseUrl && apiKey);
-const resolvedMode = requestedMode === 'mock' ? 'mock' : desktopAvailable ? 'local' : hasCredentials ? 'sdk' : 'mock';
+const resolvedMode = desktopAvailable ? 'local' : hasCredentials ? 'sdk' : 'unconfigured';
 const runtimeType = sanitizeRuntimeType(
   desktopRuntimeConfig.runtimeType ||
   storedRuntimeConfig.runtimeType ||
